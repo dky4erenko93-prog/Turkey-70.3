@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E0F11">
+<title>70.3 Сторис</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Sofia+Sans+Extra+Condensed:wght@900&family=Unbounded:wght@300;600;800&family=JetBrains+Mono:wght@500&family=Sofia+Sans:ital,wght@1,700&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --ink:#0E0F11; --panel:#16171A; --panel-2:#1E2024; --line:#2B2D32;
+  --ash:#9A9CA3; --bone:#EFECE6; --signal:#FF5B1F; --white:#F2F0EA;
+  --ui: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --label: "Unbounded", "Onest", system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--ink)}
+body{color:var(--bone);font:400 15px/1.45 var(--ui);padding-inline:16px;padding-block:16px 40px}
+.app{max-width:1040px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
+h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:uppercase}
+.count{font:600 12px/1 var(--label);letter-spacing:.1em;text-transform:uppercase;color:var(--ink);background:var(--signal);padding:8px 10px 7px}
+.work{display:grid;gap:20px}
+.stage{display:grid;gap:10px;justify-items:center}
+.frame{width:min(100%,320px);position:relative}
+.side-l,.tabs{display:none}
+.side-r{display:grid;gap:10px;width:100%}
+.save svg{flex:none}
+.ghost-btn{justify-content:center}
+.sec{display:grid;gap:18px;align-content:start}
+@media (min-width:820px){
+  .work{grid-template-columns:360px 1fr;align-items:start}
+  .stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
+}
+/* phone: the preview stays pinned on top, settings scroll underneath in tabs */
+:root{--side:76px;--ph:min(44svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(24svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}
+@supports not (height:1svh){:root{--ph:min(44vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(24vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}}
+@media (max-width:819px){
+  body{padding-top:0}
+  header{display:none}
+  .app,.work{gap:0}
+  .stage{position:sticky;top:var(--vvtop,0px);z-index:6;margin:0 -16px;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;background:var(--ink);border-bottom:1px solid var(--line);
+    grid-template-columns:minmax(var(--side),1fr) auto minmax(var(--side),1fr);grid-template-areas:"l f r" "h h h" "t t t";column-gap:12px;row-gap:8px;justify-items:stretch}
+  .frame{grid-area:f;height:var(--ph);width:auto;aspect-ratio:9/16}
+  .frame canvas{width:100%;height:100%;border-radius:12px}
+  .safe{border-radius:12px}
+  .side-l,.side-r{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-width:0;width:auto}
+  .side-l{grid-area:l;align-items:flex-start}
+  .side-r{grid-area:r;align-items:stretch}
+  .mini-title{font:800 11px/1.2 var(--label);letter-spacing:.05em;text-transform:uppercase;color:var(--bone)}
+  .side-l .count{font-size:10px;padding:6px 7px 5px;letter-spacing:.06em}
+  .btn.primary.save{flex-direction:column;gap:6px;padding:14px 6px;font:700 12px/1.1 var(--ui);letter-spacing:0;text-transform:none;border-radius:14px}
+  .save .wide{display:none}
+  .ghost-btn{flex-direction:column;gap:4px;padding:9px 6px;font:600 11px/1.15 var(--ui);text-align:center;border-radius:12px}
+  .hint{grid-area:h;font-size:12px}
+  .tabs{grid-area:t;display:flex;margin:0 -8px}
+  .tabs button{flex:1;appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--ash);font:600 14px/1 var(--ui);padding:10px 4px 12px;cursor:pointer}
+  .tabs button[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--signal)}
+  .tabs button:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
+  .controls{padding-top:18px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px)}
+  .controls > .sec:not(.on){display:none}
+  body.typing .hint,body.typing .tabs{display:none}
+  body.typing{--ph:var(--ph-typing)}
+  body.typing .controls{padding-bottom:60vh}
+}
+.safe{position:absolute;inset:0;pointer-events:none;border-radius:14px;overflow:hidden}
+.safe i{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;font:600 9px/1 var(--ui);font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:repeating-linear-gradient(135deg,rgba(255,91,31,.32) 0 6px,rgba(255,91,31,.14) 6px 12px)}
+.safe .t{top:0;height:13%;border-bottom:1px dashed rgba(255,255,255,.7)}
+.safe .b{bottom:0;height:17.7%;border-top:1px dashed rgba(255,255,255,.7)}
+@media (min-width:820px){.frame{width:100%}}
+canvas{display:block;width:100%;height:auto;border-radius:14px;background:#1b1c20;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.hint{margin:0;font-size:13px;color:var(--ash);text-align:center}
+.controls{display:grid;gap:18px}
+.group{display:grid;gap:8px}
+.group > .cap{font:600 11px/1 var(--label);letter-spacing:.12em;text-transform:uppercase;color:var(--ash)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--bone);font:600 14px/1 var(--ui);padding:11px 14px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--bone);background:var(--bone);color:var(--ink)}
+.chip:focus-visible,.btn:focus-visible,.thumb:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.swatch{display:inline-flex;align-items:center;gap:8px}
+.swatch i{width:14px;height:14px;border-radius:50%;display:inline-block;border:1px solid rgba(255,255,255,.25)}
+.desc{margin:0;font-size:13px;color:var(--ash)}
+.photos{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.thumb{appearance:none;padding:0;border:2px solid transparent;border-radius:10px;overflow:hidden;width:54px;height:96px;cursor:pointer;background:var(--panel)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb[aria-pressed="true"]{border-color:var(--signal)}
+.btn{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--bone);font:600 14px/1 var(--ui);padding:13px 16px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--ink);font:800 14px/1 var(--label);letter-spacing:.06em;text-transform:uppercase;padding:18px 20px;justify-content:center;width:100%}
+.upload input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.upload{position:relative}
+.row{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+label.f{display:grid;gap:6px;font-size:13px;color:var(--ash)}
+input[type=text],textarea,select{width:100%;background:var(--panel);border:1.5px solid var(--line);color:var(--bone);border-radius:10px;padding:11px 12px;font:500 15px/1.35 var(--ui)}
+textarea{resize:vertical;min-height:70px}
+input[type=range]{width:100%;accent-color:var(--signal)}
+.check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--bone)}
+.check input{width:20px;height:20px;accent-color:var(--signal)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:14px}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--bone);color:var(--ink);font:600 14px/1.2 var(--ui);padding:12px 16px;border-radius:12px;max-width:calc(100% - 32px)}
+.result{position:fixed;inset:0;background:rgba(10,11,12,.94);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);z-index:10}
+.result .box{display:grid;gap:12px;justify-items:center;max-width:360px;width:100%}
+.result img{width:100%;border-radius:14px}
+.result p{margin:0;text-align:center;font-size:14px;color:var(--bone)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script>
+  // model and runtime for plain hosting: the model sits next to this file, the runtime comes from jsDelivr
+  window.__MODEL_URL = 'u2netp.onnx';
+  window.__WASM_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort-wasm-simd-threaded.wasm';
+</script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>70.3 Сторис</h1>
+    <span class="count" id="countPill">— дней до старта</span>
+  </header>
+
+  <div class="work">
+    <div class="stage" id="stage">
+      <div class="side side-l" aria-hidden="true">
+        <span class="mini-title">70.3<br>Сторис</span>
+        <span class="count" id="countPill2">—</span>
+      </div>
+      <div class="frame"><canvas id="cv" width="1080" height="1920" aria-label="Превью сторис 1080×1920"></canvas><div class="safe" id="safe" hidden aria-hidden="true"><i class="t">Здесь интерфейс Instagram</i><i class="b">Здесь интерфейс Instagram</i></div></div>
+      <div class="side side-r">
+        <button class="btn primary save" id="saveBtn"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5 12 15.5 17 10.5"/><path d="M5 20h14"/></svg><span>Сохранить<span class="wide"> сторис</span></span></button>
+        <button class="btn ghost-btn" id="resetText" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span>Текст на место</span></button>
+      </div>
+      <p class="hint">Двигай пальцем фото или текст прямо на превью</p>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Настройки">
+        <button role="tab" data-tab="format" aria-selected="true">Формат</button>
+        <button role="tab" data-tab="photo" aria-selected="false">Фото</button>
+        <button role="tab" data-tab="text" aria-selected="false">Текст</button>
+        <button role="tab" data-tab="style" aria-selected="false">Стиль</button>
+      </nav>
+    </div>
+
+    <div class="controls" id="controls" data-tab="format">
+      <section class="sec" data-tab="format">
+        <div class="group">
+          <span class="cap">Формат</span>
+          <div class="chips" id="fmtChips">
+          <button class="chip" data-fmt="number" aria-pressed="true">Номер</button>
+          <button class="chip" data-fmt="protocol" aria-pressed="false">Протокол</button>
+          <button class="chip" data-fmt="tape" aria-pressed="false">Лента</button>
+          <button class="chip" data-fmt="caption" aria-pressed="false">Подпись</button>
+          <button class="chip" data-fmt="word" aria-pressed="false">Слово</button>
+          <button class="chip" data-fmt="echo" aria-pressed="false">Шлейф</button>
+          <button class="chip" data-fmt="monolog" aria-pressed="false">Монолог</button>
+          <button class="chip" data-fmt="receipts" aria-pressed="false">Квитанции</button>
+        </div>
+          <p class="desc" id="fmtDesc"></p>
+        </div>
+        <p class="desc">Готовый файл — JPG 1080×1920. На iPhone после сохранения откроется меню «Поделиться», там сразу есть Instagram.</p>
+      </section>
+
+      <section class="sec" data-tab="photo">
+        <div class="group">
+          <span class="cap">Фото</span>
+          <div class="photos">
+            <label class="btn upload" for="file">Загрузить своё<input type="file" id="file" accept="image/*"></label>
+          <button class="thumb" data-demo="demo-side.jpg" aria-pressed="true" aria-label="Пример: вело сбоку"><img src="demo-side.jpg" alt=""></button>
+          <button class="thumb" data-demo="demo-alanya.jpg" aria-pressed="false" aria-label="Пример: Аланья"><img src="demo-alanya.jpg" alt=""></button>
+          <button class="thumb" data-demo="demo-rear.jpg" aria-pressed="false" aria-label="Пример: вид сзади"><img src="demo-rear.jpg" alt=""></button>
+          </div>
+        </div>
+        <div class="group" data-for="receipts">
+          <span class="cap">Скрины Strava</span>
+          <div class="photos">
+            <label class="btn upload" for="shot1"><span id="shot1Lbl">Скрин 1</span><input type="file" id="shot1" accept="image/*"></label>
+            <label class="btn upload" for="shot2"><span id="shot2Lbl">Скрин 2</span><input type="file" id="shot2" accept="image/*"></label>
+            <button class="btn" id="shotsClear" hidden>Убрать</button>
+          </div>
+          <p class="desc">Один или два. Скрин лучше заранее обрезать до карточки тренировки — встанет целиком, без обрезки.</p>
+        </div>
+        <div class="panel">
+          <label class="f" for="zoom">Масштаб фото
+            <input type="range" id="zoom" min="100" max="250" value="100">
+          </label>
+          <label class="f" for="goff" id="goffWrap">Положение графики — выше / ниже
+            <input type="range" id="goff" min="-500" max="600" value="0">
+          </label>
+          <label class="check" for="depth" id="depthWrap"><input type="checkbox" id="depth" checked>Графика за атлетом</label>
+          <p class="desc" id="depthStatus" aria-live="polite"></p>
+          <label class="f" for="echoDir" data-for="echo">Шлейф тянется
+          <select id="echoDir"><option value="right">Вправо — атлет едет влево</option><option value="left">Влево — атлет едет вправо</option></select>
+        </label>
+        </div>
+      </section>
+
+      <section class="sec" data-tab="text">
+        <div class="panel" id="textPanel">
+        <label class="check" for="ghost" data-for="protocol"><input type="checkbox" id="ghost" checked>Большая цифра на фоне</label>
+        
+        <label class="f" for="rcTitle" data-for="receipts">Заголовок<input type="text" id="rcTitle" maxlength="60"></label>
+        <label class="f" for="rcNote" data-for="receipts">Подпись со стрелкой
+          <textarea id="rcNote" rows="3"></textarea>
+        </label>
+        <label class="check" for="echoText" data-for="echo"><input type="checkbox" id="echoText">Фраза и цифры в кадре</label>
+        
+        <label class="check" for="tag" data-for="number protocol caption word echo monolog receipts"><input type="checkbox" id="tag" checked><span id="tagLabel">Метка 37 ДН · 70.3 TURKEY</span></label>
+        <label class="f" for="word" data-for="word">Слово дня
+          <input type="text" id="word" maxlength="14">
+        </label>
+        <label class="f" for="disc" data-for="caption">Дисциплина
+          <select id="disc">
+            <option>Вело</option><option>Бег</option><option>Вода</option><option>Brick</option><option>Восстановление</option><option>Зал</option>
+          </select>
+        </label>
+        <label class="f" for="phrase" data-for="tape caption word echo monolog">Фраза
+          <textarea id="phrase" rows="2"></textarea>
+        </label>
+        <div class="row" data-for="tape caption word echo monolog">
+          <label class="f" for="metrics">Цифры
+            <input type="text" id="metrics">
+          </label>
+          <label class="f" for="mention">Отметка
+            <input type="text" id="mention">
+          </label>
+        </div>
+        <label class="f" for="textPos" data-for="tape">Где текст
+          <select id="textPos"><option value="top">Под лентой</option><option value="bottom">Внизу слева</option></select>
+        </label>
+        <div class="row" data-for="protocol">
+          <label class="f" for="p1v">Цифра 1<input type="text" id="p1v"></label>
+          <label class="f" for="p1c">Подпись 1<input type="text" id="p1c"></label>
+          <label class="f" for="p2v">Цифра 2<input type="text" id="p2v"></label>
+          <label class="f" for="p2c">Подпись 2<input type="text" id="p2c"></label>
+          <label class="f" for="p3v">Цифра 3<input type="text" id="p3v"></label>
+          <label class="f" for="p3c">Подпись 3<input type="text" id="p3c"></label>
+        </div>
+        <div class="row" data-for="number protocol echo">
+          <label class="f" for="num">Большая цифра<input type="text" id="num" maxlength="8" autocomplete="off"></label>
+          <label class="f" for="numCap">Строка над ней<input type="text" id="numCap" maxlength="28" autocomplete="off"></label>
+        </div>
+        <p class="desc" id="numDesc" data-for="number protocol echo">Пусто — цифра дней до старта считается сама. Можно вписать своё: 101, 3:34, 70.3 — и строку к нему.</p>
+        </div>
+      </section>
+
+      <section class="sec" data-tab="style">
+        <div class="group">
+          <span class="cap">Цвет</span>
+          <div class="chips" id="colorChips">
+          <button class="chip swatch" data-color="orange" aria-pressed="true"><i style="background:#FF5B1F"></i>Оранжевый</button>
+          <button class="chip swatch" data-color="white" aria-pressed="false"><i style="background:#F2F0EA"></i>Белый</button>
+          <button class="chip swatch" data-color="black" aria-pressed="false"><i style="background:#0E0F11"></i>Чёрный</button>
+          <button class="chip swatch" data-color="blue" aria-pressed="false"><i style="background:#2D5BFF"></i>Синий</button>
+          <button class="chip swatch" data-color="violet" aria-pressed="false"><i style="background:#7A4DFF"></i>Фиолетовый</button>
+          <button class="chip swatch" data-color="red" aria-pressed="false"><i style="background:#E8322B"></i>Красный</button>
+          <button class="chip swatch" data-color="green" aria-pressed="false"><i style="background:#1FC85A"></i>Зелёный</button>
+        </div>
+        </div>
+        <div class="group" data-for="number tape word echo monolog receipts">
+          <span class="cap">Подложка под текстом</span>
+          <div class="chips" id="plateChips">
+            <button class="chip" data-plate="auto" aria-pressed="true">Авто</button>
+            <button class="chip" data-plate="plate" aria-pressed="false">Плашка</button>
+            <button class="chip" data-plate="shade" aria-pressed="false">Тень</button>
+            <button class="chip" data-plate="none" aria-pressed="false">Без</button>
+          </div>
+          <p class="desc" id="plateDesc" aria-live="polite"></p>
+        </div>
+        <label class="check" for="grain"><input type="checkbox" id="grain" checked>Плёночное зерно</label>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="result" id="result" hidden>
+  <div class="box">
+    <img id="resImg" alt="Готовая сторис">
+    <p>Зажми картинку и выбери «Сохранить в Фото», потом выкладывай в Instagram.</p>
+    <button class="btn" id="resClose">Закрыть</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const RACE = new Date(2026, 10, 1);
+  const INK = '#0E0F11', BONE = '#EFECE6', ASH = '#8E9097';
+  // c = the colour, on = text colour sitting on it (tape, chip, metrics bar)
+  const ACCENTS = {
+    orange: { c: '#FF5B1F', on: INK }, white: { c: '#F2F0EA', on: INK }, black: { c: '#0E0F11', on: '#F2F0EA' },
+    blue: { c: '#2D5BFF', on: '#FFFFFF' }, violet: { c: '#7A4DFF', on: '#FFFFFF' },
+    red: { c: '#E8322B', on: '#FFFFFF' }, green: { c: '#1FC85A', on: INK }
+  };
+  const W = 1080, H = 1920;
+  const DESC = {
+    number: 'Первая сторис дня: огромная цифра по центру — дни до старта или своя.',
+    protocol: 'Вторая сторис после Номера: тот же кадр затемнён, цифра гаснет, поверх 2–3 числа тренировки.',
+    tape: 'Обычный день: диагональная лента с отсчётом, фраза и цифры.',
+    caption: 'Обычный день с фразой: фото целиком, весь текст в одной тёмной плашке.',
+    word: 'Ключевой день: одно слово из фразы размером во весь кадр.',
+    echo: 'Недельный отсчёт: цифра с тающим шлейфом. Сама считает недели до старта, в последнюю неделю — дни.',
+    monolog: 'Одна фраза крупно по центру фото. Первая сторис пары, вторая — Квитанции.',
+    receipts: 'Вторая сторис после Монолога: тот же кадр, 1–2 скрина Strava и подпись со стрелкой.'
+  };
+
+  const defaults = {
+    fmt: 'number', color: 'orange', demo: 'demo-side.jpg', zoom: 100, goff: 0, grain: true,
+    phrase: 'Боролись с интервалами, жарой и ветром.', mention: '@bogdahaa',
+    metrics: '81,52 км · 2:29 · 275 м', word: 'Ветер', disc: 'Вело', textPos: 'top',
+    p1v: '101,15 км', p1c: 'вело · набор 706 м', p2v: '3:34', p2c: 'в седле', p3v: '', p3c: '',
+    plate: 'auto', num: '', numCap: '', tag: true, ghost: true, toff: {},
+    echoText: false, echoDir: 'right', rcTitle: 'а вот и квитанции', rcNote: '82 км\n+ 12 км бегом\n= одно утро'
+  };
+  const state = Object.assign({}, defaults, { dx: 0, dy: 0, img: null, depth: true, mask: null, maskFor: null, shots: [null, null] });
+  // num / numCap are deliberately not remembered: tomorrow the countdown must be right again
+  const KEYS = ['phrase','mention','metrics','word','disc','textPos','color','p1v','p1c','p2v','p2c','p3v','p3c','grain','depth','plate','tag','ghost','toff','echoText','echoDir','rcTitle','rcNote'];
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('st703') || '{}'); } catch (e) { return {}; } })();
+  KEYS.forEach(k => { if (saved[k] !== undefined) state[k] = saved[k]; });
+  if (!state.toff || typeof state.toff !== 'object') state.toff = {};
+  function persist() {
+    const o = {}; KEYS.forEach(k => o[k] = state[k]);
+    try { localStorage.setItem('st703', JSON.stringify(o)); } catch (e) {}
+  }
+
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+
+  // ---------- dates ----------
+  function daysLeft() {
+    const t = new Date(); const t0 = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    return Math.round((RACE - t0) / 864e5);
+  }
+  function plural(n, f) { const a = n % 10, b = n % 100; if (a === 1 && b !== 11) return f[0]; if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return f[1]; return f[2]; }
+  function daysLabel(d) { return d > 0 ? `${d} ${plural(d, ['день','дня','дней'])} до старта` : 'сегодня старт'; }
+  function unitLabel(d) { return d > 0 ? `${plural(d, ['день','дня','дней'])} до старта` : 'сегодня старт'; }
+  // Шлейф counts weeks (its whole idea is the weekly countdown); the last week falls back to days
+  function autoCount() {
+    const d = daysLeft();
+    if (d <= 0) return { n: '70.3', cap: 'сегодня старт' };
+    if (state.fmt === 'echo' && d >= 7) { const w = Math.floor(d / 7); return { n: String(w), cap: `${plural(w, ['неделя','недели','недель'])} до старта` }; }
+    return { n: String(d), cap: unitLabel(d) };
+  }
+  const autoNum = () => autoCount().n;
+  const numText = () => (state.num || '').trim() || autoNum();
+  function numCaption() {
+    const cap = (state.numCap || '').trim(); if (cap) return cap;
+    return (state.num || '').trim() ? '' : autoCount().cap; // own number: the line is whatever they write, or nothing
+  }
+
+  // ---------- helpers ----------
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  // share of pixels behind the text that fight white text (too bright) or dark text (too dark)
+  function lumStats(x, y, w, h) {
+    x = clamp(Math.round(x), 0, W - 1); y = clamp(Math.round(y), 0, H - 1);
+    w = clamp(Math.round(w), 1, W - x); h = clamp(Math.round(h), 1, H - y);
+    const d = ctx.getImageData(x, y, w, h).data; let n = 0, bright = 0, dark = 0;
+    for (let i = 0; i < d.length; i += 4 * 5) {
+      const l = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255; n++;
+      if (l > 0.46) bright++; if (l < 0.62) dark++;
+    }
+    return { badWhite: n ? bright / n : 0, badInk: n ? dark / n : 1 };
+  }
+  function spaced(text, x, y, sp, align) {
+    const ch = [...text]; const ws = ch.map(c => ctx.measureText(c).width);
+    const total = ws.reduce((a, b) => a + b, 0) + sp * (ch.length - 1);
+    let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+    const keep = ctx.textAlign; ctx.textAlign = 'left';
+    ch.forEach((c, i) => { ctx.fillText(c, cx, y); cx += ws[i] + sp; });
+    ctx.textAlign = keep; return total;
+  }
+  function wrap(text, maxW) {
+    const words = String(text || '').split(/\s+/).filter(Boolean); const lines = []; let line = '';
+    for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+    if (line) lines.push(line); return lines;
+  }
+
+  const noise = document.createElement('canvas'); noise.width = noise.height = 256;
+  (() => { const n = noise.getContext('2d'); const id = n.createImageData(256, 256);
+    for (let i = 0; i < id.data.length; i += 4) { const v = 128 + (Math.random() - 0.5) * 120; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+    n.putImageData(id, 0, 0); })();
+
+  // ---------- layers ----------
+  function photoRect() {
+    const img = state.img;
+    const s = Math.max(W / img.naturalWidth, H / img.naturalHeight) * (state.zoom / 100);
+    const dw = img.naturalWidth * s, dh = img.naturalHeight * s;
+    const mx = (dw - W) / 2, my = (dh - H) / 2;
+    state.dx = clamp(state.dx, -mx, mx); state.dy = clamp(state.dy, -my, my);
+    return { x: (W - dw) / 2 + state.dx, y: (H - dh) / 2 + state.dy, w: dw, h: dh };
+  }
+  function drawPhoto() {
+    const img = state.img;
+    if (!img || !img.naturalWidth) { ctx.fillStyle = '#1b1c20'; ctx.fillRect(0, 0, W, H); return; }
+    const r = photoRect(); ctx.drawImage(img, r.x, r.y, r.w, r.h);
+  }
+  // athlete layer: the same photo cut by the mask, drawn over the graphic
+  const subj = document.createElement('canvas'); subj.width = W; subj.height = H;
+  const sctx = subj.getContext('2d');
+  function drawSubject(shade) {
+    if (!state.img || !state.mask || state.maskFor !== state.img) return;
+    const r = photoRect();
+    sctx.clearRect(0, 0, W, H); sctx.globalCompositeOperation = 'source-over';
+    sctx.drawImage(state.img, r.x, r.y, r.w, r.h);
+    sctx.globalCompositeOperation = 'destination-in'; sctx.imageSmoothingEnabled = true;
+    sctx.drawImage(state.mask, r.x, r.y, r.w, r.h);
+    if (shade) { sctx.globalCompositeOperation = 'source-atop'; drawShade(shade, sctx); } // athlete gets the same shade as the photo
+    sctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(subj, 0, 0);
+  }
+
+  // ---------- automatic cut-out (U²-Net small, runs on the phone) ----------
+  const ORT_BASE = window.__ORT_BASE || 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/';
+  const MODEL_URL = window.__MODEL_URL || 'u2netp.txt'; // the model, base64-encoded (artifacts serve text, not .onnx)
+  let sessionPromise = null;
+  function loadScript(src) {
+    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('script')); document.head.appendChild(s); });
+  }
+  function getSession() {
+    if (!sessionPromise) sessionPromise = (async () => {
+      if (!window.ort) await loadScript(ORT_BASE + 'ort.wasm.min.js');
+      ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
+      ort.env.wasm.wasmPaths = { mjs: ORT_BASE + 'ort-wasm-simd-threaded.mjs', wasm: new URL(window.__WASM_URL || 'ort-wasm-simd-threaded.wasm', document.baseURI).href };
+      const resp = await fetch(MODEL_URL); if (!resp.ok) throw new Error('model');
+      let buf;
+      if (/\.onnx$/.test(MODEL_URL)) buf = new Uint8Array(await resp.arrayBuffer()); // plain hosting (GitHub Pages) serves the binary as is
+      else { const bin = atob((await resp.text()).trim()); buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i); }
+      return ort.InferenceSession.create(buf, { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+    })().catch(e => { sessionPromise = null; throw e; });
+    return sessionPromise;
+  }
+  async function computeMask(img) {
+    const S = 320; const c = document.createElement('canvas'); c.width = c.height = S;
+    const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0, S, S);
+    const d = g.getImageData(0, 0, S, S).data; let mx = 1;
+    for (let i = 0; i < d.length; i += 4) { if (d[i] > mx) mx = d[i]; if (d[i + 1] > mx) mx = d[i + 1]; if (d[i + 2] > mx) mx = d[i + 2]; }
+    const mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225]; const N = S * S; const f = new Float32Array(3 * N);
+    for (let p = 0; p < N; p++) for (let ch = 0; ch < 3; ch++) f[ch * N + p] = (d[p * 4 + ch] / mx - mean[ch]) / std[ch];
+    const sess = await getSession();
+    const feeds = {}; feeds[sess.inputNames[0]] = new ort.Tensor('float32', f, [1, 3, S, S]);
+    const out = await sess.run(feeds); const o = out[sess.outputNames[0]].data;
+    let lo = Infinity, hi = -Infinity; for (let i = 0; i < o.length; i++) { const v = o[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    const rng = (hi - lo) || 1;
+    const mc = document.createElement('canvas'); mc.width = mc.height = S; const mg = mc.getContext('2d'); const id = mg.createImageData(S, S);
+    for (let p = 0; p < N; p++) { const a = clamp(((o[p] - lo) / rng - 0.35) / 0.3, 0, 1); const q = p * 4; id.data[q] = id.data[q + 1] = id.data[q + 2] = 255; id.data[q + 3] = Math.round(a * 255); }
+    mg.putImageData(id, 0, 0); return mc;
+  }
+  let maskJob = 0;
+  async function ensureMask() {
+    const img = state.img; if (!state.depth || !img || state.maskFor === img) return;
+    const job = ++maskJob; setDepthStatus('Вырезаю атлета… В первый раз загрузка занимает до минуты.');
+    try {
+      const m = await computeMask(img);
+      if (job !== maskJob || state.img !== img) return;
+      state.mask = m; state.maskFor = img; setDepthStatus(''); render();
+    } catch (e) {
+      if (job !== maskJob) return;
+      setDepthStatus('Автовырезка не сработала на этом устройстве. Графика останется поверх фото — подвинь её ползунком.');
+    }
+  }
+  function setDepthStatus(t) { const el = document.getElementById('depthStatus'); if (el) { el.textContent = t; el.hidden = !t; } }
+  function drawGrain() {
+    if (!state.grain) return;
+    ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.16;
+    ctx.fillStyle = ctx.createPattern(noise, 'repeat'); ctx.fillRect(0, 0, W, H); ctx.restore();
+  }
+  const pal = () => ACCENTS[state.color] || ACCENTS.orange;
+  const accent = () => pal().c, onAccent = () => pal().on;
+
+  function bigNumber(alpha, ghost) {
+    const txt = numText();
+    let size = 880; ctx.font = `900 ${size}px "Sofia Sans Extra Condensed"`;
+    const tw = ctx.measureText(txt).width; if (tw > 1000) { size = Math.floor(size * 1000 / tw); ctx.font = `900 ${size}px "Sofia Sans Extra Condensed"`; }
+    // black would vanish as a ghost on the darkened Protocol frame
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = ghost && state.color === 'black' ? '#FFFFFF' : accent(); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(txt, W / 2, 990 + state.goff); ctx.restore();
+  }
+  function labelItems() {
+    const f = '600 18px Unbounded';
+    const noNum = state.fmt === 'protocol' && !state.ghost; // «дней до старта» without the number would hang in the air
+    const lines = [state.tag ? 'IRONMAN 70.3 TURKEY' : '', noNum ? '' : numCaption().toUpperCase()].filter(Boolean);
+    return lines.map((t, i) => ({ t, font: f, size: 18, x: W / 2, y: 280 + i * 30, align: 'center', sp: 1.44, caps: true }));
+  }
+  function topLabels(color, alpha) { // fixed colour, used where the frame is already darkened
+    const items = measureItems(shifted(labelItems(), 'labels'), false); if (!items.length) return;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.textBaseline = 'alphabetic';
+    items.forEach(it => { ctx.font = it.font; spaced(it.t, it.x0, it.y, it.sp, 'left'); });
+    ctx.restore(); addHit('labels', boxOf(items));
+  }
+  function chipText() { const d = daysLeft(); return d > 0 ? `${d} ДН` : 'СТАРТ'; }
+  function chipWidth() { ctx.font = '900 34px "Sofia Sans Extra Condensed"'; return ctx.measureText(chipText()).width + 24; }
+  function chip(x, y, onDark) {
+    const t = chipText(); const cw = chipWidth();
+    const inv = onDark && state.color === 'black'; // black chip on the black plate would disappear
+    ctx.save(); ctx.fillStyle = inv ? BONE : accent(); ctx.fillRect(x, y, cw, 50);
+    ctx.font = '900 34px "Sofia Sans Extra Condensed"'; ctx.fillStyle = inv ? INK : onAccent(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    ctx.fillText(t, x + 12, y + 38); ctx.restore();
+    return cw;
+  }
+
+  // ---------- text on photo: backing so it never melts into the picture ----------
+  // items: { t, font, size, x, y (baseline), align, sp (letter-spacing), caps, role: 'metric', box: fixed plate rect }
+  function textWidth(it) {
+    ctx.font = it.font;
+    if (!it.sp) return ctx.measureText(it.t).width;
+    const ch = [...it.t]; return ch.reduce((a, c) => a + ctx.measureText(c).width, 0) + it.sp * (ch.length - 1);
+  }
+  function plateRect(it) {
+    if (it.box) return it.box;
+    const px = Math.max(10, Math.round(it.size * 0.44)), py = Math.max(6, Math.round(it.size * 0.2));
+    const asc = it.size * 0.76, desc = it.caps ? 0 : it.size * 0.24;
+    return { x: it.x0 - px, y: it.y - asc - py, w: it.w + px * 2, h: asc + desc + py * 2 };
+  }
+  // soft darkening: a full-width band behind the text block, feathered top and bottom,
+  // glued to the frame edge when the text sits near it. Built at 1/12 size, box-blurred, scaled up.
+  const shadeCv = document.createElement('canvas'); const SH_S = 12;
+  function buildShade(boxes) {
+    const s = SH_S, sw = Math.ceil(W / s), sh = Math.ceil(H / s);
+    shadeCv.width = sw; shadeCv.height = sh; const g = shadeCv.getContext('2d');
+    let a = new Float32Array(sw * sh);
+    boxes.forEach(b => {
+      let T = b.y - 70, B = b.y + b.h + 70;
+      if (b.y < H * 0.2) T = -200;
+      if (b.y + b.h > H * 0.62) B = H + 200;
+      const y0 = clamp(Math.floor(T / s), 0, sh - 1), y1 = clamp(Math.ceil(B / s), 0, sh - 1);
+      for (let y = y0; y <= y1; y++) for (let x = 0; x < sw; x++) a[y * sw + x] = 1;
+    });
+    const r = 7, tmp = new Float32Array(sw * sh);
+    for (let pass = 0; pass < 3; pass++) {
+      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) { let acc = 0; for (let k = -r; k <= r; k++) acc += a[y * sw + clamp(x + k, 0, sw - 1)]; tmp[y * sw + x] = acc / (2 * r + 1); }
+      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) { let acc = 0; for (let k = -r; k <= r; k++) acc += tmp[clamp(y + k, 0, sh - 1) * sw + x]; a[y * sw + x] = acc / (2 * r + 1); }
+    }
+    const id = g.createImageData(sw, sh);
+    for (let p = 0; p < sw * sh; p++) { const q = p * 4; id.data[q] = 14; id.data[q + 1] = 15; id.data[q + 2] = 17; id.data[q + 3] = Math.round(clamp(a[p] * 1.3, 0, 1) * 0.74 * 255); }
+    g.putImageData(id, 0, 0);
+    return shadeCv;
+  }
+  function drawShade(c, g) {
+    g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.drawImage(c, 0, 0, c.width * SH_S, c.height * SH_S); g.restore();
+  }
+  function measureItems(items, inset) {
+    items = items.filter(it => it.t);
+    items.forEach(it => {
+      it.w = textWidth(it); it.x0 = it.align === 'center' ? it.x - it.w / 2 : it.align === 'right' ? it.x - it.w : it.x;
+      if (inset && it.align !== 'center' && !it.box) it.x0 += (it.align === 'right' ? -1 : 1) * Math.max(10, Math.round(it.size * 0.44)); // bar edge sits on the grid line, text inside
+      it.r = plateRect(it);
+    });
+    return items;
+  }
+  function boxOf(items) {
+    const x0 = Math.min(...items.map(i => i.r.x)), y0 = Math.min(...items.map(i => i.r.y));
+    const x1 = Math.max(...items.map(i => i.r.x + i.r.w)), y1 = Math.max(...items.map(i => i.r.y + i.r.h));
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  let autoPick = '';
+  function backing(b) {
+    const m = state.plate;
+    if (m === 'plate') return { kind: 'plate' };
+    if (m === 'shade') return { kind: 'shade', color: '#FFFFFF' };
+    const s = lumStats(b.x, b.y, b.w, b.h);
+    const color = s.badWhite <= s.badInk ? '#FFFFFF' : INK;
+    if (m === 'none') return { kind: 'none', color };
+    const busy = Math.min(s.badWhite, s.badInk) > 0.05;
+    if (busy) autoPick = 'plate'; else if (!autoPick) autoPick = 'none';
+    return busy ? { kind: 'plate' } : { kind: 'none', color };
+  }
+  // the shade itself is laid down in render(), under the graphic, so the tape and the number stay vivid
+  function paintText(items, id) {
+    items = measureItems(items, false); if (!items.length) return;
+    const bk = backing(boxOf(items));
+    if (bk.kind === 'plate') {
+      measureItems(items, true);
+      // one path per colour so overlapping line bars merge into a single stepped block
+      ctx.save(); ctx.fillStyle = INK; ctx.beginPath();
+      items.filter(i => i.role !== 'metric').forEach(i => ctx.rect(i.r.x, i.r.y, i.r.w, i.r.h)); ctx.fill();
+      ctx.fillStyle = accent(); ctx.beginPath();
+      items.filter(i => i.role === 'metric').forEach(i => ctx.rect(i.r.x, i.r.y, i.r.w, i.r.h)); ctx.fill();
+      ctx.restore();
+    }
+    ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+    if (bk.kind === 'shade') { ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 14; }
+    items.forEach(it => {
+      ctx.font = it.font;
+      const acc = it.role === 'accent' && state.color !== 'black';
+      ctx.fillStyle = acc ? accent() : bk.kind === 'plate' ? (it.role === 'metric' ? onAccent() : BONE) : bk.color;
+      if (it.sp) spaced(it.t, it.x0, it.y, it.sp, 'left'); else ctx.fillText(it.t, it.x0, it.y);
+    });
+    ctx.restore();
+    if (id) addHit(id, boxOf(items));
+  }
+  // phrase + mention, then the metrics line
+  function blockItems(x, top, width, bottomLimit) {
+    ctx.font = '500 34px Onest';
+    const lines = wrap([state.phrase, state.mention].filter(Boolean).join(' '), width);
+    const metrics = (state.metrics || '').trim();
+    const h = lines.length * 42 + (metrics ? 60 : 0);
+    if (bottomLimit) top = Math.min(top, bottomLimit - h);
+    const items = lines.map((l, i) => ({ t: l, font: '500 34px Onest', size: 34, x, y: top + 34 + i * 42 }));
+    if (metrics) items.push({ t: metrics, font: '600 30px Onest', size: 30, x, y: top + lines.length * 42 + 54, role: 'metric' });
+    return items;
+  }
+
+  // ---------- formats ----------
+  // back = graphic that can go behind the athlete, front = text that always stays on top
+  const BACK = {
+    number() { bigNumber(0.9); },
+    tape() {
+      const cy = 412 + state.goff; const d = daysLeft();
+      ctx.save(); ctx.translate(W / 2, cy); ctx.rotate(-6 * Math.PI / 180);
+      ctx.fillStyle = accent(); ctx.fillRect(-900, -52, 1800, 104);
+      ctx.fillStyle = onAccent(); ctx.font = '800 32px Unbounded'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      const unit = `${daysLabel(d).toUpperCase()}   /   IRONMAN 70.3 TURKEY   /   01.11.2026   /   `;
+      ctx.fillText(unit.repeat(3), -880, 3); ctx.restore();
+    },
+    word() {
+      const word = (state.word || '').toUpperCase(); if (!word) return;
+      let size = 620; ctx.font = `900 ${size}px "Sofia Sans Extra Condensed"`;
+      const tw = ctx.measureText(word).width; if (tw > 1000) { size = Math.floor(size * 1000 / tw); ctx.font = `900 ${size}px "Sofia Sans Extra Condensed"`; }
+      ctx.save(); ctx.fillStyle = accent(); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(word, W / 2, 690 + state.goff); ctx.restore();
+    },
+    echo() {
+      // solid digit + three fading copies trailing behind the athlete
+      const txt = numText(); let size = 900; ctx.font = `900 ${size}px "Sofia Sans Extra Condensed"`;
+      let tw = ctx.measureText(txt).width; const total = tw + 270;
+      if (total > 1000) { size = Math.floor(size * 1000 / total); ctx.font = `900 ${size}px "Sofia Sans Extra Condensed"`; tw = ctx.measureText(txt).width; }
+      const st = 90 * size / 900, x0 = (W - (tw + st * 3)) / 2, right = state.echoDir !== 'left';
+      const alpha = [1, 0.55, 0.3, 0.14];
+      ctx.save(); ctx.fillStyle = accent(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      for (let k = 3; k >= 0; k--) { ctx.globalAlpha = alpha[k]; ctx.fillText(txt, right ? x0 + st * k : x0 + st * (3 - k), 990 + state.goff); }
+      ctx.restore();
+    }
+  };
+  // ---------- movable text blocks ----------
+  // offset per format + block (remembered); hit boxes are rebuilt on every render
+  let hits = [];
+  const offKey = id => state.fmt + ':' + id;
+  const off = id => state.toff[offKey(id)] || { x: 0, y: 0 };
+  function shifted(items, id) {
+    const o = off(id); if (!o.x && !o.y) return items;
+    items.forEach(it => { it.x += o.x; it.y += o.y; if (it.box) it.box = { x: it.box.x + o.x, y: it.box.y + o.y, w: it.box.w, h: it.box.h }; });
+    return items;
+  }
+  const addHit = (id, b) => hits.push({ id, box: b });
+  function hitAt(p) {
+    const pad = 36;
+    for (let i = hits.length - 1; i >= 0; i--) { const b = hits[i].box; if (p.x >= b.x - pad && p.x <= b.x + b.w + pad && p.y >= b.y - pad && p.y <= b.y + b.h + pad) return hits[i]; }
+    return null;
+  }
+  const hasOffsets = () => Object.keys(state.toff).some(k => k.startsWith(state.fmt + ':') && (state.toff[k].x || state.toff[k].y));
+
+  // text that sits straight on the photo (gets the plate / shade treatment)
+  function wordTop() {
+    ctx.font = '500 34px Onest';
+    const lines = wrap([state.phrase, state.mention].filter(Boolean).join(' '), 620);
+    return 1590 - ((state.tag ? 50 + 22 : 0) + lines.length * 42 + (state.metrics.trim() ? 60 : 0));
+  }
+  // every text block that sits straight on the photo: { id (for dragging), items }
+  const BLOCKS = {
+    number: () => [{ id: 'labels', items: shifted(labelItems(), 'labels') }],
+    tape: () => [{ id: 'text', items: shifted(state.textPos === 'bottom' ? blockItems(72, 1380, 620, 1590) : blockItems(72, 412 + state.goff + 150, 420, 1590), 'text') }],
+    word: () => [{ id: 'text', items: shifted(wordItems(), 'text') }],
+    echo: () => [{ id: 'labels', items: shifted(echoLabelItems(), 'labels') }]
+      .concat(state.echoText ? [{ id: 'text', items: shifted(blockItems(72, 1380, 620, 1590), 'text') }] : []),
+    monolog: () => [{ id: 'label', items: shifted(accentLabel(), 'label') }, { id: 'text', items: shifted(monologItems(), 'text') }],
+    receipts: () => [{ id: 'label', items: shifted(accentLabel(), 'label') }, { id: 'title', items: shifted(rcTitleItems(), 'title') }, { id: 'note', items: shifted(rcNoteItems(), 'note') }]
+  };
+  const paintBlocks = fmt => BLOCKS[fmt]().forEach(b => paintText(b.items, b.id));
+  function echoLabelItems() {
+    const items = []; let y = 282; const cap = numCaption().toUpperCase();
+    if (cap) { items.push({ t: cap, font: '800 28px Unbounded', size: 28, x: 72, y, caps: true }); y += 34; }
+    if (state.tag) items.push({ t: 'IRONMAN 70.3 TURKEY · 01.11.2026', font: '500 18px "JetBrains Mono"', size: 18, x: 72, y, sp: 1.44, caps: true });
+    return items;
+  }
+  function accentLabelText() { const d = daysLeft(); return d > 0 ? `${d} ${plural(d, ['день','дня','дней'])} до 70.3` : 'сегодня старт'; }
+  function accentLabel() {
+    if (!state.tag) return [];
+    return [{ t: accentLabelText().toUpperCase(), font: '600 18px Unbounded', size: 18, x: W / 2, y: 280, align: 'center', sp: 1.44, caps: true, role: 'accent' }];
+  }
+  function centeredLines(lines, top) {
+    return lines.map((t, i) => ({ t, font: '600 44px Onest', size: 44, x: W / 2, y: top + 44 + i * 57, align: 'center' }));
+  }
+  function monologItems() {
+    ctx.font = '600 44px Onest';
+    const lines = wrap(state.phrase, 900); const m = (state.mention || '').trim(); if (m) lines.push(m);
+    return centeredLines(lines, 760 - lines.length * 57 / 2);
+  }
+  function rcTitleItems() { ctx.font = '600 44px Onest'; return centeredLines(wrap(state.rcTitle, 900), 340); }
+  // screenshot cards: two → staggered pair with an arrow between, one → a single bigger card
+  function cardRects() {
+    const imgs = state.shots.filter(Boolean); const slots = imgs.length ? imgs : [null, null];
+    const fit = (img, mw, mh) => { if (!img) return { w: 620, h: 412 }; const k = Math.min(mw / img.naturalWidth, mh / img.naturalHeight); return { w: Math.round(img.naturalWidth * k), h: Math.round(img.naturalHeight * k) }; };
+    if (slots.length === 1) { const d = fit(slots[0], 700, 820); return [{ img: slots[0], n: 1, id: 'card1', x: (W - d.w) / 2, y: 520, w: d.w, h: d.h, rot: -2.5 }]; }
+    const a = fit(slots[0], 620, 520), b = fit(slots[1], 620, 520);
+    return [{ img: slots[0], n: 1, id: 'card1', x: 72, y: 470, w: a.w, h: a.h, rot: -3 }, { img: slots[1], n: 2, id: 'card2', x: 950 - b.w, y: 1060, w: b.w, h: b.h, rot: 2.5 }];
+  }
+  function rcNoteItems() {
+    const lines = String(state.rcNote || '').split('\n').map(t => t.trim()).filter(Boolean);
+    const cards = cardRects(); const one = cards.length === 1;
+    const top = one ? cards[0].y + cards[0].h + 60 : 780, x = one ? 1000 : 1020;
+    return lines.map((t, i) => ({ t, font: 'italic 700 38px "Sofia Sans"', size: 38, x, y: top + 38 + i * 44, align: 'right' }));
+  }
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function drawCard(c) {
+    const o = off(c.id), x = c.x + o.x, y = c.y + o.y, hw = c.w / 2, hh = c.h / 2;
+    ctx.save(); ctx.translate(x + hw, y + hh); ctx.rotate(c.rot * Math.PI / 180);
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 24;
+    ctx.fillStyle = c.img ? '#16171A' : 'rgba(14,15,17,0.55)'; roundRect(-hw, -hh, c.w, c.h, 26); ctx.fill(); ctx.restore();
+    roundRect(-hw, -hh, c.w, c.h, 26); ctx.clip();
+    if (c.img) ctx.drawImage(c.img, -hw, -hh, c.w, c.h);
+    else {
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 4; ctx.setLineDash([16, 12]); roundRect(-hw + 2, -hh + 2, c.w - 4, c.h - 4, 24); ctx.stroke();
+      ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.font = '600 36px Onest'; ctx.fillText(`Скрин Strava ${c.n}`, 0, 0);
+      ctx.globalAlpha = 0.7; ctx.font = '500 24px Onest'; ctx.fillText('загрузи в панели ниже', 0, 40);
+    }
+    ctx.restore(); addHit(c.id, { x, y, w: c.w, h: c.h });
+  }
+  function drawArrow() {
+    const o = off('note');
+    ctx.save(); ctx.translate(760 + o.x, 930 + o.y); ctx.strokeStyle = accent(); ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(170, 10); ctx.bezierCurveTo(175, 70, 120, 120, 40, 130); ctx.moveTo(70, 104); ctx.lineTo(38, 131); ctx.lineTo(74, 150); ctx.stroke();
+    ctx.restore();
+  }
+  function wordItems() {
+    const top = wordTop(); if (!state.tag) return blockItems(72, top, 620, 0);
+    const cw = chipWidth();
+    const label = { t: '70.3 TURKEY', font: '600 16px Unbounded', size: 16, x: 72 + cw + 14, y: top + 32, sp: 1, caps: true };
+    ctx.font = label.font; label.box = { x: 72 + cw, y: top, w: textWidth(label) + 28, h: 50 };
+    return [label].concat(blockItems(72, top + 72, 620, 0));
+  }
+  const FORMATS = {
+    number() { paintBlocks('number'); },
+    echo() { paintBlocks('echo'); },
+    monolog() { paintBlocks('monolog'); },
+    receipts() {
+      const cards = cardRects(); cards.forEach(drawCard);
+      paintBlocks('receipts');
+      if (cards.length === 2 && String(state.rcNote || '').trim()) drawArrow();
+    },
+    protocol() {
+      ctx.fillStyle = 'rgba(14,15,17,0.6)'; ctx.fillRect(0, 0, W, H);
+      if (state.ghost) bigNumber(0.22, true); topLabels('#FFFFFF', 0.6);
+      const o = off('rows'), x = 72 + o.x; let y = 880 + o.y, first = null, last = 0, right = x + 200;
+      [[state.p1v, state.p1c], [state.p2v, state.p2c], [state.p3v, state.p3c]].forEach(([v, c]) => {
+        if (!v && !c) return;
+        ctx.save(); ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        if (v) { ctx.font = '300 110px Unbounded'; ctx.fillText(v, x, y + 100); right = Math.max(right, x + ctx.measureText(v).width); }
+        if (c) { ctx.globalAlpha = 0.8; ctx.font = '400 28px Onest'; ctx.fillText(c, x, y + 150); right = Math.max(right, x + ctx.measureText(c).width); }
+        ctx.restore(); if (first === null) first = y; last = y; y += 215;
+      });
+      if (first !== null) addHit('rows', { x: x - 10, y: first + 15, w: right - x + 20, h: last - first + 150 });
+    },
+    tape() { paintBlocks('tape'); },
+    caption() {
+      const o = off('plate'), x = 72 + o.x, w = 660; ctx.font = '500 44px Onest';
+      const lines = wrap(state.phrase, w - 60); const ph = Math.max(1, lines.length) * 52;
+      const head = state.tag ? 50 + 18 : 0;
+      const h = 26 + head + ph + 18 + 24 + 28; const top = 1600 - h + o.y;
+      ctx.fillStyle = INK; ctx.fillRect(x, top, w, h); addHit('plate', { x, y: top, w, h });
+      ctx.save(); ctx.textBaseline = 'alphabetic';
+      if (state.tag) {
+        const cw = chip(x + 30, top + 26, true);
+        ctx.fillStyle = ASH; ctx.font = '600 19px Onest';
+        spaced(`70.3 TURKEY · ${state.disc}`.toUpperCase(), x + 30 + cw + 16, top + 26 + 33, 1.2, 'left');
+      }
+      ctx.fillStyle = BONE; ctx.font = '500 44px Onest';
+      lines.forEach((l, i) => ctx.fillText(l, x + 30, top + 26 + head + 40 + i * 52));
+      const by = top + h - 28;
+      ctx.font = '500 22px Onest'; ctx.fillStyle = ASH; ctx.textAlign = 'left';
+      spaced(state.metrics.toUpperCase(), x + 30, by, 0.9, 'left');
+      ctx.fillStyle = BONE; ctx.textAlign = 'right'; ctx.fillText(state.mention, x + w - 30, by);
+      ctx.restore();
+    },
+    word() {
+      paintBlocks('word');
+      const o = off('text'); if (state.tag) chip(72 + o.x, wordTop() + o.y); // after sampling, so the chip itself doesn't count as "busy background"
+    }
+  };
+
+  let raf = 0;
+  function render() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      ctx.clearRect(0, 0, W, H); hits = [];
+      drawPhoto();
+      let shade = null;
+      if (state.plate === 'shade' && BLOCKS[state.fmt]) {
+        const boxes = BLOCKS[state.fmt]().map(b => measureItems(b.items, false)).filter(a => a.length).map(boxOf);
+        if (boxes.length) { shade = buildShade(boxes); drawShade(shade, ctx); }
+      }
+      if (BACK[state.fmt]) { BACK[state.fmt](); if (state.depth) drawSubject(shade); }
+      drawGrain();
+      autoPick = '';
+      (FORMATS[state.fmt] || FORMATS.number)();
+      plateHint();
+    });
+  }
+  let lastHint = null;
+  function plateHint() {
+    const t = state.plate !== 'auto' ? ({ plate: 'Тёмная плашка под каждой строкой, цифры — на цветной.', shade: 'Мягкое затемнение фото под текстом.', none: 'Без подложки: цвет текста подбирается под фон.' })[state.plate]
+      : autoPick === 'plate' ? 'Авто: фон пёстрый — включил плашку.' : autoPick === 'none' ? 'Авто: фон ровный — текст читается и без плашки.' : '';
+    if (t !== lastHint) { lastHint = t; const el = document.getElementById('plateDesc'); if (el) el.textContent = t; }
+  }
+
+  // ---------- UI ----------
+  const $ = id => document.getElementById(id);
+  function syncUI() {
+    document.querySelectorAll('#fmtChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fmt === state.fmt)));
+    document.querySelectorAll('#colorChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.color === state.color)));
+    $('fmtDesc').textContent = DESC[state.fmt];
+    document.querySelectorAll('[data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(state.fmt); });
+    $('goffWrap').hidden = ['caption', 'monolog', 'receipts'].includes(state.fmt);
+    const canDepth = !!BACK[state.fmt]; $('depthWrap').hidden = !canDepth;
+    if (!canDepth) setDepthStatus(''); else if (state.depth) ensureMask();
+    document.querySelectorAll('#plateChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.plate === state.plate)));
+    const d = daysLeft(); $('countPill').textContent = daysLabel(d);
+    $('countPill2').textContent = d > 0 ? `${d} дн` : 'старт';
+    $('tagLabel').textContent = ['number', 'protocol'].includes(state.fmt) ? 'Строка IRONMAN 70.3 TURKEY'
+      : state.fmt === 'echo' ? 'Строка IRONMAN 70.3 TURKEY · 01.11.2026'
+      : ['monolog', 'receipts'].includes(state.fmt) ? `Строка «${accentLabelText()}»` : `Метка ${chipText()} · 70.3 TURKEY`;
+    $('metrics').closest('label').hidden = state.fmt === 'monolog'; // Монолог is words only
+    if (state.fmt === 'echo' && !state.echoText) { $('phrase').closest('label').hidden = true; $('metrics').closest('.row').hidden = true; }
+    $('numDesc').textContent = state.fmt === 'echo'
+      ? 'Пусто — считается само: недели до старта, в последнюю неделю — дни. Можно вписать своё число и строку к нему.'
+      : 'Пусто — цифра дней до старта считается сама. Можно вписать своё: 101, 3:34, 70.3 — и строку к нему.';
+    if (state.fmt === 'caption' && !state.tag) $('disc').closest('label').hidden = true; // discipline lives in that label line
+    if (state.fmt === 'protocol' && !state.ghost) { $('num').closest('.row').hidden = true; $('numDesc').hidden = true; } // no number, nothing to set up
+    $('resetText').hidden = !hasOffsets();
+    $('num').placeholder = autoNum();
+    $('numCap').placeholder = (state.num || '').trim() ? 'например: км за неделю' : autoCount().cap;
+  }
+  ['num','numCap'].forEach(k => {
+    const el = $(k); el.value = state[k];
+    el.addEventListener('input', () => { state[k] = el.value; syncUI(); render(); });
+  });
+  $('ghost').checked = !!state.ghost; $('ghost').addEventListener('change', e => { state.ghost = e.target.checked; persist(); syncUI(); render(); });
+  $('echoText').checked = !!state.echoText; $('echoText').addEventListener('change', e => { state.echoText = e.target.checked; persist(); syncUI(); render(); });
+  $('echoDir').value = state.echoDir; $('echoDir').addEventListener('change', e => { state.echoDir = e.target.value; persist(); render(); });
+  function syncShots() {
+    [0, 1].forEach(i => { $('shot' + (i + 1) + 'Lbl').textContent = `Скрин ${i + 1}${state.shots[i] ? ' ✓' : ''}`; });
+    $('shotsClear').hidden = !state.shots.some(Boolean);
+  }
+  [0, 1].forEach(i => $('shot' + (i + 1)).addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const img = new Image();
+    img.onload = () => { state.shots[i] = img; ['card1', 'card2'].forEach(c => delete state.toff['receipts:' + c]); syncShots(); syncUI(); render(); };
+    img.onerror = () => toast('Не получилось открыть скрин.');
+    img.src = URL.createObjectURL(f); e.target.value = '';
+  }));
+  $('shotsClear').addEventListener('click', () => { state.shots = [null, null]; syncShots(); render(); });
+  $('tag').checked = !!state.tag; $('tag').addEventListener('change', e => { state.tag = e.target.checked; persist(); syncUI(); render(); });
+  $('plateChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.plate = b.dataset.plate; persist(); syncUI(); render(); });
+  ['phrase','mention','metrics','word','p1v','p1c','p2v','p2c','p3v','p3c','rcTitle','rcNote'].forEach(k => {
+    const el = $(k); el.value = state[k];
+    el.addEventListener('input', () => { state[k] = el.value; persist(); render(); });
+  });
+  $('disc').value = state.disc; $('disc').addEventListener('change', e => { state.disc = e.target.value; persist(); render(); });
+  $('textPos').value = state.textPos; $('textPos').addEventListener('change', e => { state.textPos = e.target.value; delete state.toff['tape:text']; persist(); syncUI(); render(); });
+  $('grain').checked = !!state.grain; $('grain').addEventListener('change', e => { state.grain = e.target.checked; persist(); render(); });
+  $('depth').checked = !!state.depth; $('depth').addEventListener('change', e => { state.depth = e.target.checked; persist(); if (state.depth) ensureMask(); else setDepthStatus(''); render(); });
+  $('zoom').addEventListener('input', e => { state.zoom = +e.target.value; render(); });
+  $('goff').addEventListener('input', e => { state.goff = +e.target.value; render(); });
+  $('fmtChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.fmt = b.dataset.fmt; state.goff = 0; $('goff').value = 0; syncUI(); render(); });
+  $('colorChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.color = b.dataset.color; persist(); syncUI(); render(); });
+
+  function loadImage(src, isObjectUrl) {
+    const img = new Image();
+    img.onload = () => { state.img = img; state.mask = null; state.maskFor = null; state.dx = 0; state.dy = 0; state.zoom = 100; $('zoom').value = 100; render(); if (BACK[state.fmt] && state.depth) ensureMask(); };
+    img.onerror = () => toast('Не получилось открыть фото. Попробуй другое.');
+    img.src = src;
+  }
+  document.querySelectorAll('.thumb').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.thumb').forEach(t => t.setAttribute('aria-pressed', String(t === b)));
+    loadImage(b.dataset.demo);
+  }));
+  $('file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    document.querySelectorAll('.thumb').forEach(t => t.setAttribute('aria-pressed', 'false'));
+    loadImage(URL.createObjectURL(f), true); e.target.value = '';
+  });
+
+  // ---------- phone layout: tabs + keeping the typed field visible under the pinned preview ----------
+  const phone = window.matchMedia('(max-width: 819px)');
+  function setTab(t) {
+    $('controls').dataset.tab = t;
+    document.querySelectorAll('#tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+    document.querySelectorAll('#controls > .sec').forEach(sec => sec.classList.toggle('on', sec.dataset.tab === t));
+  }
+  $('tabs').addEventListener('click', e => {
+    const b = e.target.closest('[role=tab]'); if (!b) return;
+    setTab(b.dataset.tab); if (phone.matches) window.scrollTo({ top: 0 });
+  });
+  setTab('format');
+  const FIELD = 'input[type=text], textarea';
+  function keepVisible(el) {
+    const want = $('stage').getBoundingClientRect().bottom + 14;
+    const r = el.getBoundingClientRect(); const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    if (r.top < want || r.bottom > vh - 14) window.scrollBy({ top: r.top - want, behavior: 'smooth' });
+  }
+  document.addEventListener('focusin', e => {
+    if (!phone.matches || !e.target.matches(FIELD)) return;
+    document.body.classList.add('typing'); // smaller preview while the keyboard is up
+    setTimeout(() => keepVisible(e.target), 320);
+  });
+  document.addEventListener('focusout', () => {
+    if (!phone.matches) return;
+    setTimeout(() => { const a = document.activeElement; if (!a || !a.matches(FIELD)) document.body.classList.remove('typing'); }, 80);
+  });
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    const onVV = () => {
+      document.documentElement.style.setProperty('--vvtop', Math.max(0, vv.offsetTop) + 'px'); // iOS pans under the keyboard
+      const a = document.activeElement; if (phone.matches && a && a.matches(FIELD) && vv.height < window.innerHeight * 0.85) keepVisible(a);
+    };
+    vv.addEventListener('resize', onVV); vv.addEventListener('scroll', () => document.documentElement.style.setProperty('--vvtop', Math.max(0, vv.offsetTop) + 'px'));
+  }
+
+  // drag to reposition
+  let drag = null;
+  function toCanvas(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+  cv.addEventListener('pointerdown', e => {
+    const p = toCanvas(e), h = hitAt(p);
+    if (h) {
+      const o0 = Object.assign({}, off(h.id));
+      drag = { text: true, key: offKey(h.id), p0: p, o0, base: { x: h.box.x - o0.x, y: h.box.y - o0.y, w: h.box.w, h: h.box.h } };
+      $('safe').hidden = false; cv.style.cursor = 'move';
+    } else drag = { x: e.clientX, y: e.clientY };
+    cv.setPointerCapture(e.pointerId);
+  });
+  const lim = (v, lo, hi) => clamp(v, Math.min(lo, hi), Math.max(lo, hi));
+  cv.addEventListener('pointermove', e => {
+    if (!drag) { if (e.pointerType === 'mouse') cv.style.cursor = hitAt(toCanvas(e)) ? 'move' : ''; return; }
+    if (drag.text) {
+      const p = toCanvas(e), b = drag.base;
+      let x = lim(drag.o0.x + p.x - drag.p0.x, -b.x, W - b.x - b.w), y = lim(drag.o0.y + p.y - drag.p0.y, -b.y, H - b.y - b.h);
+      if (Math.abs(x) < 14) x = 0; if (Math.abs(y) < 14) y = 0; // snaps back onto the layout grid
+      state.toff[drag.key] = { x: Math.round(x), y: Math.round(y) }; render(); return;
+    }
+    const k = W / cv.clientWidth;
+    state.dx += (e.clientX - drag.x) * k; state.dy += (e.clientY - drag.y) * k; drag = { x: e.clientX, y: e.clientY }; render();
+  });
+  const endDrag = () => {
+    if (drag && drag.text) { persist(); $('safe').hidden = true; cv.style.cursor = ''; $('resetText').hidden = !hasOffsets(); }
+    drag = null;
+  };
+  $('resetText').addEventListener('click', () => {
+    Object.keys(state.toff).forEach(k => { if (k.startsWith(state.fmt + ':')) delete state.toff[k]; });
+    persist(); $('resetText').hidden = true; render();
+  });
+  cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+  // save
+  let downloads = null;
+  (async () => { try { if (window.claude && window.claude.use) downloads = await window.claude.use('downloads'); } catch (e) { downloads = null; } })();
+  let toastT = 0;
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600); }
+  function showResult(blob) { $('resImg').src = URL.createObjectURL(blob); $('result').hidden = false; }
+  $('resClose').addEventListener('click', () => { $('result').hidden = true; });
+  $('saveBtn').addEventListener('click', () => {
+    cv.toBlob(async blob => {
+      if (!blob) { toast('Не получилось собрать картинку.'); return; }
+      const d = daysLeft();
+      const name = `story-${state.fmt}-${d > 0 ? d : 'race'}.jpg`;
+      if (downloads) {
+        try { await downloads.save({ filename: name, data: blob }); toast('Готово. Картинка сохранена.'); return; }
+        catch (err) { if (err && err.code === 'declined') { toast('Сохранение отменено.'); return; } if (err && err.code === 'rate_limited') { toast('Подожди секунду и нажми ещё раз.'); return; } }
+      }
+      if (!(window.claude && window.claude.use)) {
+        // own hosting: phone → share sheet (Instagram, «Сохранить изображение»), computer → normal download
+        const file = new File([blob], name, { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file] }); return; }
+          catch (err) { if (err && err.name === 'AbortError') return; }
+        }
+        if (window.matchMedia('(pointer: fine)').matches) {
+          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+          document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+          toast('Готово. Картинка скачана.'); return;
+        }
+      }
+      showResult(blob);
+    }, 'image/jpeg', 0.92);
+  });
+
+  // boot
+  syncUI();
+  loadImage(state.demo);
+  const fontsToLoad = [
+    ['900 100px "Sofia Sans Extra Condensed"', '0123456789.АБВЕТРСИЛЬНЫЙ'],
+    ['600 18px Unbounded', 'IRONMAN ДНЕЙ ДО СТАРТА'], ['600 16px Unbounded', '70.3 TURKEY'], ['800 28px Unbounded', 'НЕДЕЛЬ ДО СТАРТА'],
+    ['500 18px "JetBrains Mono"', 'IRONMAN 70.3 TURKEY · 01.11.2026'], ['italic 700 38px "Sofia Sans"', '82 км + бегом = одно утро'], ['600 44px Onest', 'а вот и квитанции'], ['600 36px Onest', 'Скрин Strava'], ['800 32px Unbounded', 'ДНЕЙ ДО СТАРТА'], ['300 110px Unbounded', '0123456789,:км'],
+    ['500 34px Onest', 'Боролись с интервалами'], ['600 30px Onest', '0123 км'], ['400 28px Onest', 'в седле'], ['500 44px Onest', 'Абв'], ['600 19px Onest', 'ВЕЛО'], ['500 22px Onest', 'КМ']
+  ];
+  if (document.fonts && document.fonts.load) {
+    Promise.all(fontsToLoad.map(([f, t]) => document.fonts.load(f, t).catch(() => null))).then(render);
+  }
+})();
+</script>
+</body>
+</html>
