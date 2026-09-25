@@ -16,7 +16,9 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{background:var(--ink)}
+html,body{background:var(--ink);margin:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,label,.thumb{touch-action:manipulation}
 body{color:var(--bone);font:400 15px/1.45 var(--ui);padding-inline:16px;padding-block:16px 40px}
 .app{max-width:1040px;margin:0 auto;display:grid;gap:20px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
@@ -35,15 +37,15 @@ h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:u
   .stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
 }
 /* phone: the preview stays pinned on top, settings scroll underneath in tabs */
-:root{--side:76px;--ph:min(44svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(24svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}
-@supports not (height:1svh){:root{--ph:min(44vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(24vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}}
+:root{--side:76px;--ph:min(44svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(30svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}
+@supports not (height:1svh){:root{--ph:min(44vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(30vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}}
 @media (max-width:819px){
   body{padding-top:0}
   header{display:none}
   .app,.work{gap:0}
   .stage{position:sticky;top:var(--vvtop,0px);z-index:6;margin:0 -16px;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;background:var(--ink);border-bottom:1px solid var(--line);
     grid-template-columns:minmax(var(--side),1fr) auto minmax(var(--side),1fr);grid-template-areas:"l f r" "h h h" "t t t";column-gap:12px;row-gap:8px;justify-items:stretch}
-  .frame{grid-area:f;height:var(--ph);width:auto;aspect-ratio:9/16}
+  .frame{grid-area:f;height:var(--ph);width:calc(var(--ph) * 9 / 16)} /* both sides explicit: Safari does not recompute an aspect-ratio width inside the grid */
   .frame canvas{width:100%;height:100%;border-radius:12px}
   .safe{border-radius:12px}
   .side-l,.side-r{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-width:0;width:auto}
@@ -60,6 +62,7 @@ h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:u
   .tabs button[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--signal)}
   .tabs button:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
   .controls{padding-top:18px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px)}
+  body input[type=text],body textarea,body select{font-size:16px} /* below 16px iOS Safari zooms the page on focus */
   .controls > .sec:not(.on){display:none}
   body.typing .hint,body.typing .tabs{display:none}
   body.typing{--ph:var(--ph-typing)}
@@ -70,7 +73,7 @@ h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:u
 .safe .t{top:0;height:13%;border-bottom:1px dashed rgba(255,255,255,.7)}
 .safe .b{bottom:0;height:17.7%;border-top:1px dashed rgba(255,255,255,.7)}
 @media (min-width:820px){.frame{width:100%}}
-canvas{display:block;width:100%;height:auto;border-radius:14px;background:#1b1c20;touch-action:none;cursor:grab}
+canvas{display:block;width:100%;height:auto;border-radius:14px;background:#1b1c20;touch-action:none;cursor:grab;object-fit:contain}
 canvas:active{cursor:grabbing}
 .hint{margin:0;font-size:13px;color:var(--ash);text-align:center}
 .controls{display:grid;gap:18px}
@@ -130,7 +133,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
         <button class="btn primary save" id="saveBtn"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5 12 15.5 17 10.5"/><path d="M5 20h14"/></svg><span>Сохранить<span class="wide"> сторис</span></span></button>
         <button class="btn ghost-btn" id="resetText" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span>Текст на место</span></button>
       </div>
-      <p class="hint">Двигай пальцем фото или текст прямо на превью</p>
+      <p class="hint">Двигай фото и текст прямо на превью</p>
       <nav class="tabs" id="tabs" role="tablist" aria-label="Настройки">
         <button role="tab" data-tab="format" aria-selected="true">Формат</button>
         <button role="tab" data-tab="photo" aria-selected="false">Фото</button>
