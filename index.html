@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#0E0F11">
 <title>70.3 Сторис</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Sofia+Sans+Extra+Condensed:wght@900&family=Unbounded:wght@300;600;800&family=JetBrains+Mono:wght@500&family=Sofia+Sans:ital,wght@1,700&display=swap">
@@ -27,8 +27,9 @@ h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:u
 .work{display:grid;gap:20px}
 .stage{display:grid;gap:10px;justify-items:center}
 .frame{width:min(100%,320px);position:relative}
-.side-l,.tabs{display:none}
-.side-r{display:grid;gap:10px;width:100%}
+.tabs,.sheet-head{display:none}
+.canvas-area{width:100%;display:grid;justify-items:center}
+.actions{display:grid;gap:10px;width:100%}
 .save svg{flex:none}
 .ghost-btn{justify-content:center}
 .sec{display:grid;gap:18px;align-content:start}
@@ -36,42 +37,61 @@ h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:u
   .work{grid-template-columns:360px 1fr;align-items:start}
   .stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
 }
-/* phone: the preview stays pinned on top, settings scroll underneath in tabs */
-:root{--ph:min(56svh, calc((100vw - 32px) * 16 / 9));--ph-typing:min(30svh, calc((100vw - 32px) * 16 / 9))}
-@supports not (height:1svh){:root{--ph:min(56vh, calc((100vw - 32px) * 16 / 9));--ph-typing:min(30vh, calc((100vw - 32px) * 16 / 9))}}
-.mobile-only{display:none}
+/* ---------- phone: a full-screen editor like the story editors people already know ----------
+   top bar (save) · big canvas · format strip · one bottom sheet at a time · tool bar */
 @media (max-width:819px){
-  body{padding-top:0}
-  header,.side-l,.hint{display:none!important}
-  .mobile-only{display:block}
-  .app,.work{gap:0}
-  /* pinned preview on top; one row under it: tabs + save */
-  .stage{position:sticky;top:var(--vvtop,0px);z-index:6;margin:0 -16px;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;background:var(--ink);border-bottom:1px solid var(--line);
-    grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"f f" "t r";column-gap:10px;row-gap:10px;align-items:end;justify-items:stretch}
-  .frame{grid-area:f;justify-self:center;height:var(--ph);width:calc(var(--ph) * 9 / 16)} /* both sides explicit: Safari does not recompute an aspect-ratio width inside the grid */
-  .frame canvas{width:100%;height:100%;border-radius:12px}
-  .safe{border-radius:12px}
-  .side-r{grid-area:r;display:flex;align-items:center;width:auto;padding-bottom:6px}
-  .btn.primary.save{width:auto;flex-direction:row;gap:6px;height:40px;padding:0 14px;font:700 14px/1 var(--ui);letter-spacing:0;text-transform:none;border-radius:12px}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{padding:0}
+  header,.hint{display:none!important}
+  .app{display:block;max-width:none}
+  .work{position:fixed;left:0;right:0;top:var(--vvtop,0px);height:var(--vvh,100dvh);gap:0;background:var(--ink);
+    display:grid;grid-template-columns:100%;grid-template-rows:auto minmax(0,1fr) auto auto auto auto;
+    grid-template-areas:"top" "canvas" "formats" "sheethead" "sheet" "tools";
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .work > .stage,.work > .controls{display:contents} /* their children sit straight in the shell grid */
+  .canvas-area{grid-area:canvas;position:relative;min-height:0;display:block}
+  .frame{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:0;height:0} /* sized from JS to fit the free space */
+  .frame canvas{width:100%;height:100%;border-radius:14px}
+  .safe{border-radius:14px}
+  .actions{grid-area:top;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:8px 12px 6px;width:auto}
+  #resetText{margin-right:auto;padding:0 12px;height:36px;font:600 13px/1 var(--ui);border-radius:999px;gap:6px}
+  .btn.primary.save{width:auto;height:38px;padding:0 16px;gap:7px;font:700 14px/1 var(--ui);letter-spacing:0;text-transform:none;border-radius:999px}
   .btn.primary.save svg{width:18px;height:18px}
   .save .wide{display:none}
-  /* «Текст на место» sits in the empty corner beside the preview */
-  #resetText{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px;flex-direction:column;gap:4px;width:74px;padding:9px 6px;font:600 11px/1.15 var(--ui);text-align:center;border-radius:12px}
-  .tabs{grid-area:t;display:flex;margin-left:-8px}
-  .tabs button{flex:1;appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--ash);font:600 14px/1 var(--ui);padding:12px 2px 14px;cursor:pointer;white-space:nowrap}
-  .tabs button[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--signal)}
+  /* format strip: always under the canvas, swipe sideways */
+  .sec[data-tab="format"]{grid-area:formats;display:block;padding:10px 0 8px}
+  .sec[data-tab="format"] > :not(.group),.sec[data-tab="format"] .cap,#fmtDesc{display:none}
+  #fmtChips{flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:0 12px;scroll-padding:0 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #fmtChips::-webkit-scrollbar{display:none}
+  #fmtChips .chip{flex:none;padding:10px 14px;font-size:14px}
+  /* tool bar */
+  .tabs{grid-area:tools;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);background:var(--ink)}
+  .tabs button{appearance:none;background:none;border:0;color:var(--ash);font:600 11px/1 var(--ui);letter-spacing:.02em;display:grid;justify-items:center;gap:5px;padding:9px 4px 8px;cursor:pointer}
+  .tabs button[aria-selected="true"]{color:var(--signal)}
   .tabs button:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
-  .controls{padding-top:18px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px)}
+  /* bottom sheet: one tool at a time, the canvas above shrinks but never hides */
+  .sheet-head{grid-area:sheethead;display:none;align-items:center;justify-content:space-between;gap:10px;padding:12px 12px 10px 16px;background:var(--panel);border-radius:20px 20px 0 0;border-top:1px solid var(--line)}
+  .seg{display:flex;gap:2px;background:var(--ink);border-radius:999px;padding:3px}
+  .seg button{appearance:none;border:0;background:none;color:var(--ash);font:600 13px/1 var(--ui);padding:9px 14px;border-radius:999px;cursor:pointer}
+  .seg button[aria-selected="true"]{background:var(--panel-2);color:var(--bone);box-shadow:0 0 0 1px var(--line)}
+  .sheet-head .done{appearance:none;border:0;background:var(--bone);color:var(--ink);font:700 13px/1 var(--ui);padding:9px 14px;border-radius:999px;cursor:pointer}
+  body.sheet-open .sheet-head{display:flex}
+  body.sheet-open .sec[data-tab="format"],body.sheet-open .tabs{display:none}
+  .controls > .sec:not([data-tab="format"]){display:none}
+  .controls > .sec.on:not([data-tab="format"]){grid-area:sheet;display:grid;background:var(--panel);height:var(--sheet-h);overflow-y:auto;overscroll-behavior:contain;padding:4px 16px 20px;gap:16px}
+  :root{--sheet-h:min(36vh,300px)}
+  .sec .panel{background:var(--panel-2)}
   body input[type=text],body textarea,body select{font-size:16px} /* below 16px iOS Safari zooms the page on focus */
-  .controls > .sec:not(.on){display:none}
-  body.typing .tabs,body.typing .side-r{display:none}
-  @media (max-width:419px){ /* narrow phones: the tabs need the room, save becomes an icon */
-    .btn.primary.save{width:48px;padding:0;justify-content:center}
-    .save .lbl{display:none}
-  }
-  body.typing .stage{padding-bottom:10px}
-  body.typing{--ph:var(--ph-typing)}
-  body.typing .controls{padding-bottom:60vh}
+  body .toast{bottom:calc(env(safe-area-inset-bottom,0px) + 128px);width:max-content;max-width:calc(100% - 48px)}
+  /* typing: the keyboard is up. Above it stays only the field being edited, the canvas takes the rest
+     (the Instagram way), and «Готово» floats in the corner */
+  body.typing .actions,body.typing .sec[data-tab="format"],body.typing .tabs,body.typing .seg{display:none!important}
+  body.typing .sheet-head{grid-area:auto;position:absolute;z-index:3;top:calc(env(safe-area-inset-top,0px) + 8px);right:12px;padding:0;background:none;border:0}
+  body.typing .controls > .sec.on:not([data-tab="format"]){height:auto;max-height:calc(var(--vvh,100dvh) * .45);padding:12px 16px;border-radius:18px 18px 0 0;border-top:1px solid var(--line)}
+  body.typing .sec.on > :not(.edit-path):not(.edit-solo),
+  body.typing .sec.on .edit-path > :not(.edit-path):not(.edit-solo){display:none!important}
+  body.typing .sec.on .edit-path{display:block!important;padding:0;border:0;background:none}
+  body.typing .edit-solo textarea{min-height:0}
 }
 .safe{position:absolute;inset:0;pointer-events:none;border-radius:14px;overflow:hidden}
 .safe i{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;font:600 9px/1 var(--ui);font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:repeating-linear-gradient(135deg,rgba(255,91,31,.32) 0 6px,rgba(255,91,31,.14) 6px 12px)}
@@ -107,7 +127,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
 .check{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--bone)}
 .check input{width:20px;height:20px;accent-color:var(--signal)}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:14px}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--bone);color:var(--ink);font:600 14px/1.2 var(--ui);padding:12px 16px;border-radius:12px;max-width:calc(100% - 32px)}
+.toast{position:fixed;z-index:20;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);text-align:center;transform:translateX(-50%);background:var(--bone);color:var(--ink);font:600 14px/1.2 var(--ui);padding:12px 16px;border-radius:12px;max-width:calc(100% - 32px)}
 .result{position:fixed;inset:0;background:rgba(10,11,12,.94);display:grid;place-items:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);z-index:10}
 .result .box{display:grid;gap:12px;justify-items:center;max-width:360px;width:100%}
 .result img{width:100%;border-radius:14px}
@@ -129,25 +149,26 @@ input[type=range]{width:100%;accent-color:var(--signal)}
 
   <div class="work">
     <div class="stage" id="stage">
-      <div class="side side-l" aria-hidden="true">
-        <span class="mini-title">70.3<br>Сторис</span>
-        <span class="count" id="countPill2">—</span>
+      <div class="canvas-area" id="canvasArea">
+        <div class="frame" id="frame"><canvas id="cv" width="1080" height="1920" aria-label="Превью сторис 1080×1920"></canvas><div class="safe" id="safe" hidden aria-hidden="true"><i class="t">Здесь интерфейс Instagram</i><i class="b">Здесь интерфейс Instagram</i></div></div>
       </div>
-      <div class="frame"><canvas id="cv" width="1080" height="1920" aria-label="Превью сторис 1080×1920"></canvas><div class="safe" id="safe" hidden aria-hidden="true"><i class="t">Здесь интерфейс Instagram</i><i class="b">Здесь интерфейс Instagram</i></div></div>
-      <div class="side side-r">
-        <button class="btn primary save" id="saveBtn" aria-label="Сохранить сторис"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5 12 15.5 17 10.5"/><path d="M5 20h14"/></svg><span class="lbl">Сохранить<span class="wide"> сторис</span></span></button>
+      <div class="actions" id="actions">
+        <button class="btn primary save" id="saveBtn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5 12 15.5 17 10.5"/><path d="M5 20h14"/></svg><span>Сохранить<span class="wide"> сторис</span></span></button>
         <button class="btn ghost-btn" id="resetText" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span>Текст на место</span></button>
       </div>
       <p class="hint">Двигай фото и текст прямо на превью</p>
-      <nav class="tabs" id="tabs" role="tablist" aria-label="Настройки">
-        <button role="tab" data-tab="format" aria-selected="true">Формат</button>
-        <button role="tab" data-tab="photo" aria-selected="false">Фото</button>
-        <button role="tab" data-tab="text" aria-selected="false">Текст</button>
-        <button role="tab" data-tab="style" aria-selected="false">Стиль</button>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Инструменты">
+        <button role="tab" data-tab="photo" aria-selected="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-5 4 4 2.5-2.5L20 18"/></svg><span>Фото</span></button>
+        <button role="tab" data-tab="text" aria-selected="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6.5V5h14v1.5"/><path d="M12 5v14"/><path d="M9 19h6"/></svg><span>Текст</span></button>
+        <button role="tab" data-tab="style" aria-selected="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3 3.6 6 6.9 6 10.2a6 6 0 0 1-12 0c0-3.3 3-6.6 6-10.2Z"/></svg><span>Стиль</span></button>
       </nav>
     </div>
 
-    <div class="controls" id="controls" data-tab="format">
+    <div class="controls" id="controls">
+      <div class="sheet-head" id="sheetHead">
+        <div class="seg" id="sheetTabs" role="tablist" aria-label="Инструменты"><button role="tab" data-tab="photo">Фото</button><button role="tab" data-tab="text">Текст</button><button role="tab" data-tab="style">Стиль</button></div>
+        <button class="done" id="sheetDone">Готово</button>
+      </div>
       <section class="sec" data-tab="format">
         <div class="group">
           <span class="cap">Формат</span>
@@ -163,7 +184,6 @@ input[type=range]{width:100%;accent-color:var(--signal)}
         </div>
           <p class="desc" id="fmtDesc"></p>
         </div>
-        <p class="desc mobile-only">Фото и текст двигаются пальцем прямо на превью.</p>
         <p class="desc">Готовый файл — JPG 1080×1920. На iPhone после сохранения откроется меню «Поделиться», там сразу есть Instagram.</p>
       </section>
 
@@ -824,7 +844,6 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     if (!canDepth) setDepthStatus(''); else if (state.depth) ensureMask();
     document.querySelectorAll('#plateChips .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.plate === state.plate)));
     const d = daysLeft(); $('countPill').textContent = daysLabel(d);
-    $('countPill2').textContent = d > 0 ? `${d} дн` : 'старт';
     $('tagLabel').textContent = ['number', 'protocol'].includes(state.fmt) ? 'Строка IRONMAN 70.3 TURKEY'
       : state.fmt === 'echo' ? 'Строка IRONMAN 70.3 TURKEY · 01.11.2026'
       : ['monolog', 'receipts'].includes(state.fmt) ? `Строка «${accentLabelText()}»` : `Метка ${chipText()} · 70.3 TURKEY`;
@@ -870,7 +889,10 @@ input[type=range]{width:100%;accent-color:var(--signal)}
   $('depth').checked = !!state.depth; $('depth').addEventListener('change', e => { state.depth = e.target.checked; persist(); if (state.depth) ensureMask(); else setDepthStatus(''); render(); });
   $('zoom').addEventListener('input', e => { state.zoom = +e.target.value; render(); });
   $('goff').addEventListener('input', e => { state.goff = +e.target.value; render(); });
-  $('fmtChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.fmt = b.dataset.fmt; state.goff = 0; $('goff').value = 0; syncUI(); render(); });
+  $('fmtChips').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return; state.fmt = b.dataset.fmt; state.goff = 0; $('goff').value = 0; syncUI(); render();
+    if (window.matchMedia('(max-width: 819px)').matches) b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  });
   $('colorChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.color = b.dataset.color; persist(); syncUI(); render(); });
 
   function loadImage(src, isObjectUrl) {
@@ -889,83 +911,148 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     loadImage(URL.createObjectURL(f), true); e.target.value = '';
   });
 
-  // ---------- phone layout: tabs + keeping the typed field visible under the pinned preview ----------
+  // ---------- phone: full-screen editor (top bar · canvas · formats · one sheet · tool bar) ----------
   const phone = window.matchMedia('(max-width: 819px)');
+  let sheet = null;
   function setTab(t) {
-    $('controls').dataset.tab = t;
-    document.querySelectorAll('#tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
-    document.querySelectorAll('#controls > .sec').forEach(sec => sec.classList.toggle('on', sec.dataset.tab === t));
+    sheet = t || null;
+    document.querySelectorAll('#tabs [role=tab], #sheetTabs [role=tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === sheet)));
+    document.querySelectorAll('#controls > .sec').forEach(sec => sec.classList.toggle('on', sec.dataset.tab === sheet));
+    document.body.classList.toggle('sheet-open', !!sheet);
+    if (sheet) $('toast').hidden = true; // the first-run hint gets out of the way
+    if (sheet) { const sec = document.querySelector(`#controls > .sec[data-tab="${sheet}"]`); if (sec) sec.scrollTop = 0; }
+    else { const a = document.activeElement; if (a && a.matches && a.matches('input, textarea, select')) a.blur(); }
+    fitFrame();
   }
-  $('tabs').addEventListener('click', e => {
-    const b = e.target.closest('[role=tab]'); if (!b) return;
-    setTab(b.dataset.tab); if (phone.matches) window.scrollTo({ top: 0 });
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('[role=tab]'); if (b) setTab(sheet === b.dataset.tab ? null : b.dataset.tab); });
+  // «Готово» first ends typing (all fields come back), a second tap closes the sheet
+  $('sheetDone').addEventListener('click', () => {
+    const a = document.activeElement;
+    if (document.body.classList.contains('typing') && a && a.blur) a.blur(); else setTab(null);
   });
-  setTab('format');
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && phone.matches && e.target.matches('input[type=text]')) e.target.blur(); });
+  $('sheetTabs').addEventListener('click', e => { const b = e.target.closest('[role=tab]'); if (b) setTab(b.dataset.tab); });
+  // the canvas always fits the free space between the bars; both sides are set explicitly,
+  // because Safari mis-sizes aspect-ratio boxes inside grids
+  function fitFrame() {
+    const fr = $('frame');
+    if (!phone.matches) { fr.style.width = fr.style.height = ''; return; }
+    const area = $('canvasArea'); const w = area.clientWidth - 24, h = area.clientHeight - 8;
+    if (w <= 0 || h <= 0) return;
+    const fh = Math.max(80, Math.min(h, w * 16 / 9));
+    fr.style.height = fh + 'px'; fr.style.width = (fh * 9 / 16) + 'px';
+  }
+  if (window.ResizeObserver) new ResizeObserver(fitFrame).observe($('canvasArea'));
+  // the shell follows the visible part of the screen, so the keyboard never covers the sheet
+  function fitShell() {
+    const vv = window.visualViewport;
+    document.documentElement.style.setProperty('--vvh', (vv ? vv.height : window.innerHeight) + 'px');
+    document.documentElement.style.setProperty('--vvtop', (vv ? Math.max(0, vv.offsetTop) : 0) + 'px');
+    fitFrame();
+  }
+  fitShell();
+  window.addEventListener('resize', fitShell);
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitShell); window.visualViewport.addEventListener('scroll', fitShell); }
+  if (phone.addEventListener) phone.addEventListener('change', () => { setTab(null); fitShell(); });
   const FIELD = 'input[type=text], textarea';
-  function keepVisible(el) {
-    const want = $('stage').getBoundingClientRect().bottom + 14;
-    const r = el.getBoundingClientRect(); const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    if (r.top < want || r.bottom > vh - 14) window.scrollBy({ top: r.top - want, behavior: 'smooth' });
+  function markEditing(el) {
+    document.querySelectorAll('.edit-path, .edit-solo').forEach(n => n.classList.remove('edit-path', 'edit-solo'));
+    if (!el) return;
+    const sec = el.closest('.sec'); const solo = el.closest('label.f') || el;
+    solo.classList.add('edit-solo');
+    for (let n = solo.parentElement; n && n !== sec; n = n.parentElement) n.classList.add('edit-path');
   }
   document.addEventListener('focusin', e => {
     if (!phone.matches || !e.target.matches(FIELD)) return;
-    document.body.classList.add('typing'); // smaller preview while the keyboard is up
-    setTimeout(() => keepVisible(e.target), 320);
+    markEditing(e.target);
+    document.body.classList.add('typing'); // keyboard up: only this field stays above it, the canvas takes the rest
+    setTimeout(fitFrame, 50); setTimeout(fitFrame, 350);
   });
   document.addEventListener('focusout', () => {
     if (!phone.matches) return;
-    setTimeout(() => { const a = document.activeElement; if (!a || !a.matches(FIELD)) document.body.classList.remove('typing'); }, 80);
+    setTimeout(() => { const a = document.activeElement; if (!a || !a.matches(FIELD)) { document.body.classList.remove('typing'); markEditing(null); fitFrame(); } }, 80);
   });
-  if (window.visualViewport) {
-    const vv = window.visualViewport;
-    const onVV = () => {
-      document.documentElement.style.setProperty('--vvtop', Math.max(0, vv.offsetTop) + 'px'); // iOS pans under the keyboard
-      const a = document.activeElement; if (phone.matches && a && a.matches(FIELD) && vv.height < window.innerHeight * 0.85) keepVisible(a);
-    };
-    vv.addEventListener('resize', onVV); vv.addEventListener('scroll', () => document.documentElement.style.setProperty('--vvtop', Math.max(0, vv.offsetTop) + 'px'));
+  // tap a text block on the canvas → its fields open right away
+  const EDIT = { labels: 'num', text: 'phrase', plate: 'phrase', rows: 'p1v', title: 'rcTitle', note: 'rcNote', label: '', card1: 'shots', card2: 'shots' };
+  function editBlock(id) {
+    const target = EDIT[id];
+    if (target === 'shots') { setTab('photo'); return; }
+    setTab('text');
+    const el = target ? $(target) : null;
+    if (el && el.offsetParent !== null) { el.focus(); if (el.select && el.tagName === 'INPUT') el.select(); }
   }
 
-  // drag to reposition
-  let drag = null;
+  // ---------- gestures on the canvas: drag photo or text, pinch to scale, tap text to edit ----------
+  let drag = null, pinch = null; const pts = new Map();
   function toCanvas(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; }
+  const lim = (v, lo, hi) => clamp(v, Math.min(lo, hi), Math.max(lo, hi));
   cv.addEventListener('pointerdown', e => {
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size >= 2) { // second finger: pinch scales the photo
+      const [a, b] = [...pts.values()];
+      if (drag && drag.text) { persist(); $('safe').hidden = true; }
+      drag = null; pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: state.zoom }; return;
+    }
     const p = toCanvas(e), h = hitAt(p);
+    const base = { t0: performance.now(), sx: e.clientX, sy: e.clientY, moved: 0 };
     if (h) {
       const o0 = Object.assign({}, off(h.id));
-      drag = { text: true, key: offKey(h.id), p0: p, o0, base: { x: h.box.x - o0.x, y: h.box.y - o0.y, w: h.box.w, h: h.box.h } };
-      $('safe').hidden = false; cv.style.cursor = 'move';
-    } else drag = { x: e.clientX, y: e.clientY };
-    cv.setPointerCapture(e.pointerId);
+      drag = Object.assign(base, { text: true, id: h.id, key: offKey(h.id), p0: p, o0, box: { x: h.box.x - o0.x, y: h.box.y - o0.y, w: h.box.w, h: h.box.h } });
+      cv.style.cursor = 'move';
+    } else drag = Object.assign(base, { x: e.clientX, y: e.clientY });
   });
-  const lim = (v, lo, hi) => clamp(v, Math.min(lo, hi), Math.max(lo, hi));
   cv.addEventListener('pointermove', e => {
+    if (pts.has(e.pointerId)) pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) {
+      const [a, b] = [...pts.values()];
+      state.zoom = clamp(Math.round(pinch.z0 * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d0), 100, 250); $('zoom').value = state.zoom; render(); return;
+    }
     if (!drag) { if (e.pointerType === 'mouse') cv.style.cursor = hitAt(toCanvas(e)) ? 'move' : ''; return; }
+    drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
     if (drag.text) {
-      const p = toCanvas(e), b = drag.base;
+      if (drag.moved < 5) return; // still a tap
+      $('safe').hidden = false;
+      const p = toCanvas(e), b = drag.box;
       let x = lim(drag.o0.x + p.x - drag.p0.x, -b.x, W - b.x - b.w), y = lim(drag.o0.y + p.y - drag.p0.y, -b.y, H - b.y - b.h);
       if (Math.abs(x) < 14) x = 0; if (Math.abs(y) < 14) y = 0; // snaps back onto the layout grid
       state.toff[drag.key] = { x: Math.round(x), y: Math.round(y) }; render(); return;
     }
     const k = W / cv.clientWidth;
-    state.dx += (e.clientX - drag.x) * k; state.dy += (e.clientY - drag.y) * k; drag = { x: e.clientX, y: e.clientY }; render();
+    state.dx += (e.clientX - drag.x) * k; state.dy += (e.clientY - drag.y) * k; drag.x = e.clientX; drag.y = e.clientY; render();
   });
-  const endDrag = () => {
-    if (drag && drag.text) { persist(); $('safe').hidden = true; cv.style.cursor = ''; $('resetText').hidden = !hasOffsets(); }
+  function finish(e) {
+    pts.delete(e.pointerId);
+    if (pinch) { if (pts.size < 2) pinch = null; drag = null; return; }
+    if (!drag) return;
+    const tap = drag.moved < 6 && performance.now() - drag.t0 < 450;
+    if (drag.text) {
+      persist(); $('safe').hidden = true; cv.style.cursor = ''; $('resetText').hidden = !hasOffsets();
+      if (tap && phone.matches) pendingTap = { id: drag.id };
+    } else if (tap && sheet) pendingTap = { close: true };
     drag = null;
-  };
+  }
+  let pendingTap = null;
+  cv.addEventListener('click', () => {
+    const t = pendingTap; pendingTap = null; if (!t) return;
+    if (t.close) setTab(null); // tap on the photo closes the open sheet
+    else editBlock(t.id);      // tap on text opens its fields
+  });
+  cv.addEventListener('pointerup', finish);
+  cv.addEventListener('pointercancel', e => { pts.delete(e.pointerId); pinch = null; drag = null; $('safe').hidden = true; });
   $('resetText').addEventListener('click', () => {
     Object.keys(state.toff).forEach(k => { if (k.startsWith(state.fmt + ':')) delete state.toff[k]; });
     persist(); $('resetText').hidden = true; render();
   });
-  cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
 
   // save
   let downloads = null;
   (async () => { try { if (window.claude && window.claude.use) downloads = await window.claude.use('downloads'); } catch (e) { downloads = null; } })();
   let toastT = 0;
-  function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600); }
+  function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, ms || 2600); }
   function showResult(blob) { $('resImg').src = URL.createObjectURL(blob); $('result').hidden = false; }
   $('resClose').addEventListener('click', () => { $('result').hidden = true; });
+  $('toast').addEventListener('click', () => { $('toast').hidden = true; });
   $('saveBtn').addEventListener('click', () => {
     cv.toBlob(async blob => {
       if (!blob) { toast('Не получилось собрать картинку.'); return; }
@@ -994,6 +1081,13 @@ input[type=range]{width:100%;accent-color:var(--signal)}
 
   // boot
   syncUI();
+  setTab(null);
+  try { // one-time hint on phones
+    if (phone.matches && !localStorage.getItem('st703_tip')) {
+      setTimeout(() => toast('Двигай фото и текст пальцем, двумя пальцами — масштаб. Нажми на текст, чтобы его изменить.', 5200), 900);
+      localStorage.setItem('st703_tip', '1');
+    }
+  } catch (e) {}
   loadImage(state.demo);
   const fontsToLoad = [
     ['900 100px "Sofia Sans Extra Condensed"', '0123456789.АБВЕТРСИЛЬНЫЙ'],
