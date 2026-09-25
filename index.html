@@ -146,6 +146,7 @@ canvas:active{cursor:grabbing}
 .btn{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--bone);font:600 14px/1 var(--ui);padding:13px 16px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .btn.primary{background:var(--signal);border-color:var(--signal);color:var(--ink);font:800 14px/1 var(--label);letter-spacing:.06em;text-transform:uppercase;padding:18px 20px;justify-content:center;width:100%}
 .upload input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.picker{position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
 .upload{position:relative}
 .row{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
 label.f{display:grid;gap:6px;font-size:13px;color:var(--ash)}
@@ -233,7 +234,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
             <label class="btn upload" for="shot2"><span id="shot2Lbl">Скрин 2</span><input type="file" id="shot2" accept="image/*"></label>
             <button class="btn" id="shotsClear" hidden>Убрать</button>
           </div>
-          <p class="desc">Один или два. Скрин лучше заранее обрезать до карточки тренировки — встанет целиком, без обрезки.</p>
+          <p class="desc">Один или два. Можно и прямо на фото: нажми на карточку. Скрин лучше заранее обрезать до карточки тренировки — встанет целиком.</p>
         </div>
         <div class="panel">
           <label class="f" for="zoom">Масштаб фото
@@ -336,6 +337,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<input type="file" id="shotPick" accept="image/*" class="picker" tabindex="-1" aria-hidden="true">
 
 <script>
 (() => {
@@ -782,11 +784,11 @@ input[type=range]{width:100%;accent-color:var(--signal)}
   function rcTitleItems() { ctx.font = '600 44px Onest'; return centeredLines(wrap(state.rcTitle, 900), 340, 'rcTitle'); }
   // screenshot cards: two → staggered pair with an arrow between, one → a single bigger card
   function cardRects() {
-    const imgs = state.shots.filter(Boolean); const slots = imgs.length ? imgs : [null, null];
+    const s = state.shots, filled = [0, 1].filter(i => s[i]);
     const fit = (img, mw, mh) => { if (!img) return { w: 620, h: 412 }; const k = Math.min(mw / img.naturalWidth, mh / img.naturalHeight); return { w: Math.round(img.naturalWidth * k), h: Math.round(img.naturalHeight * k) }; };
-    if (slots.length === 1) { const d = fit(slots[0], 700, 820); return [{ img: slots[0], n: 1, id: 'card1', x: (W - d.w) / 2, y: 520, w: d.w, h: d.h, rot: -2.5 }]; }
-    const a = fit(slots[0], 620, 520), b = fit(slots[1], 620, 520);
-    return [{ img: slots[0], n: 1, id: 'card1', x: 72, y: 470, w: a.w, h: a.h, rot: -3 }, { img: slots[1], n: 2, id: 'card2', x: 950 - b.w, y: 1060, w: b.w, h: b.h, rot: 2.5 }];
+    if (filled.length === 1) { const i = filled[0], d = fit(s[i], 700, 820); return [{ img: s[i], n: i + 1, id: 'card' + (i + 1), x: (W - d.w) / 2, y: 520, w: d.w, h: d.h, rot: -2.5 }]; }
+    const a = fit(s[0], 620, 520), b = fit(s[1], 620, 520);
+    return [{ img: s[0], n: 1, id: 'card1', x: 72, y: 470, w: a.w, h: a.h, rot: -3 }, { img: s[1], n: 2, id: 'card2', x: 950 - b.w, y: 1060, w: b.w, h: b.h, rot: 2.5 }];
   }
   function rcNoteItems() {
     const lines = String(state.rcNote || '').split('\n').map(t => t.trim()).filter(Boolean);
@@ -799,6 +801,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
   function drawCard(c) {
+    if (!c.img && exporting) return; // an empty slot is a hint for the editor, not part of the story
     const o = off(c.id), x = c.x + o.x, y = c.y + o.y, hw = c.w / 2, hh = c.h / 2;
     ctx.save(); ctx.translate(x + hw, y + hh); ctx.rotate(c.rot * Math.PI / 180);
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 24;
@@ -809,10 +812,23 @@ input[type=range]{width:100%;accent-color:var(--signal)}
       ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 4; ctx.setLineDash([16, 12]); roundRect(-hw + 2, -hh + 2, c.w - 4, c.h - 4, 24); ctx.stroke();
       ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
       ctx.font = '600 36px Onest'; ctx.fillText(`Скрин Strava ${c.n}`, 0, 0);
-      ctx.globalAlpha = 0.7; ctx.font = '500 24px Onest'; ctx.fillText('загрузи в панели ниже', 0, 40);
+      ctx.globalAlpha = 0.7; ctx.font = '500 24px Onest'; ctx.fillText('нажми, чтобы загрузить', 0, 40);
     }
-    ctx.restore(); addHit(c.id, { x, y, w: c.w, h: c.h });
+    ctx.restore(); addHit(c.id, { x, y, w: c.w, h: c.h }); picks.push({ n: c.n, x, y, w: c.w, h: c.h });
   }
+  // one screenshot in: the story shows one big card, the editor adds a small tile for the other slot
+  function drawAddTile(n, top) {
+    if (exporting) return;
+    const x = 72, y = top, w = 380, h = 170;
+    ctx.save(); ctx.translate(x + w / 2, y + h / 2); ctx.rotate(-2 * Math.PI / 180);
+    ctx.fillStyle = 'rgba(14,15,17,0.55)'; roundRect(-w / 2, -h / 2, w, h, 22); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 4; ctx.setLineDash([14, 10]); roundRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 20); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = '600 38px Onest'; ctx.fillText(`+ Скрин ${n}`, 0, 4);
+    ctx.globalAlpha = 0.7; ctx.font = '500 24px Onest'; ctx.fillText('необязательно', 0, 44);
+    ctx.restore(); picks.push({ n, x, y, w, h });
+  }
+  function pickAt(p) { const pad = 10; for (let i = picks.length - 1; i >= 0; i--) { const z = picks[i]; if (p.x >= z.x - pad && p.x <= z.x + z.w + pad && p.y >= z.y - pad && p.y <= z.y + z.h + pad) return z; } return null; }
   function drawArrow() {
     const o = off('note');
     ctx.save(); ctx.translate(760 + o.x, 930 + o.y); ctx.strokeStyle = accent(); ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -832,8 +848,9 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     monolog() { paintBlocks('monolog'); },
     receipts() {
       const cards = cardRects(); cards.forEach(drawCard);
+      if (cards.length === 1) drawAddTile(3 - cards[0].n, cards[0].y + cards[0].h + 60);
       paintBlocks('receipts');
-      if (cards.length === 2 && String(state.rcNote || '').trim()) drawArrow();
+      if (cards.length === 2 && String(state.rcNote || '').trim() && (!exporting || cards.every(c => c.img))) drawArrow();
     },
     protocol() {
       ctx.fillStyle = 'rgba(14,15,17,0.6)'; ctx.fillRect(0, 0, W, H);
@@ -879,11 +896,11 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     }
   };
 
-  let raf = 0;
-  function render() {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      ctx.clearRect(0, 0, W, H); hits = []; zones = []; gfxBox.num = gfxBox.word = null;
+  let raf = 0, exporting = false, picks = [];
+  function render() { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); }
+  function draw() {
+    {
+      ctx.clearRect(0, 0, W, H); hits = []; zones = []; picks = []; gfxBox.num = gfxBox.word = null;
       drawPhoto();
       let shade = null;
       if (state.plate === 'shade' && BLOCKS[state.fmt]) {
@@ -898,7 +915,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
       if (gfxBox.word) addZone('word', gfxBox.word);
       plateHint();
       if (document.body.classList.contains('typing')) positionEditor();
-    });
+    }
   }
   let lastHint = null;
   function plateHint() {
@@ -944,13 +961,17 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     [0, 1].forEach(i => { $('shot' + (i + 1) + 'Lbl').textContent = `Скрин ${i + 1}${state.shots[i] ? ' ✓' : ''}`; });
     $('shotsClear').hidden = !state.shots.some(Boolean);
   }
-  [0, 1].forEach(i => $('shot' + (i + 1)).addEventListener('change', e => {
-    const f = e.target.files && e.target.files[0]; if (!f) return;
+  function loadShot(i, f) {
+    if (!f) return;
     const img = new Image();
     img.onload = () => { state.shots[i] = img; ['card1', 'card2'].forEach(c => delete state.toff['receipts:' + c]); syncShots(); syncUI(); render(); };
     img.onerror = () => toast('Не получилось открыть скрин.');
-    img.src = URL.createObjectURL(f); e.target.value = '';
-  }));
+    img.src = URL.createObjectURL(f);
+  }
+  [0, 1].forEach(i => $('shot' + (i + 1)).addEventListener('change', e => { loadShot(i, e.target.files && e.target.files[0]); e.target.value = ''; }));
+  let pickSlot = 0;
+  $('shotPick').addEventListener('change', e => { loadShot(pickSlot, e.target.files && e.target.files[0]); e.target.value = ''; });
+  function pickShot(n) { pickSlot = n - 1; const el = $('shotPick'); el.value = ''; el.click(); } // must run inside the tap itself
   $('shotsClear').addEventListener('click', () => { state.shots = [null, null]; syncShots(); render(); });
   $('tag').checked = !!state.tag; $('tag').addEventListener('change', e => { state.tag = e.target.checked; persist(); syncUI(); render(); });
   $('plateChips').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.plate = b.dataset.plate; persist(); syncUI(); render(); });
@@ -1151,7 +1172,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
       const [a, b] = [...pts.values()];
       state.zoom = clamp(Math.round(pinch.z0 * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d0), 100, 250); $('zoom').value = state.zoom; render(); return;
     }
-    if (!drag) { if (e.pointerType === 'mouse') cv.style.cursor = hitAt(toCanvas(e)) ? 'move' : ''; return; }
+    if (!drag) { if (e.pointerType === 'mouse') { const p = toCanvas(e); cv.style.cursor = hitAt(p) ? 'move' : state.fmt === 'receipts' && pickAt(p) ? 'pointer' : ''; } return; }
     drag.moved = Math.max(drag.moved, Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy));
     if (drag.text) {
       if (drag.moved < 5) return; // still a tap
@@ -1171,6 +1192,14 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     const tap = drag.moved < 6 && performance.now() - drag.t0 < 450;
     let act = null;
     const z = tap && phone.matches ? zoneAt(drag.tp) : null; // the exact line under the finger
+    const pk = tap && !z && state.fmt === 'receipts' ? pickAt(drag.tp) : null; // a screenshot card or its empty slot
+    if (pk) {
+      if (drag.text) { persist(); $('safe').hidden = true; cv.style.cursor = ''; }
+      drag = null; act = { pick: pk.n };
+      if (e.pointerType === 'mouse') { pendingTap = act; return; }
+      pendingPick = act; setTimeout(() => { if (pendingPick) { const t = pendingPick; pendingPick = null; runTap(t); } }, 0); // touchend below opens it; this is the fallback
+      return;
+    }
     if (drag.text) {
       persist(); $('safe').hidden = true; cv.style.cursor = ''; $('resetText').hidden = !hasOffsets();
       if (tap && phone.matches) act = z ? { field: z.field } : { id: drag.id };
@@ -1181,9 +1210,10 @@ input[type=range]{width:100%;accent-color:var(--signal)}
     if (e.pointerType === 'mouse') pendingTap = act; // mouse: wait for the click so it cannot land in the sheet that opens
     else runTap(act);                                // touch: no click follows (touchstart is cancelled below)
   }
-  let pendingTap = null;
+  let pendingTap = null, pendingPick = null;
   function runTap(t) {
-    if (t.close) setTab(null);             // tap on the photo closes the open sheet
+    if (t.pick) pickShot(t.pick);          // tap on a screenshot: choose a new one for that slot
+    else if (t.close) setTab(null);        // tap on the photo closes the open sheet
     else if (t.field) editField(t.field);  // tap on a line opens exactly its field
     else editBlock(t.id);
   }
@@ -1194,6 +1224,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
   });
   // iOS: without this a long press starts text selection, the magnifier and the copy menu
   cv.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  cv.addEventListener('touchend', () => { const t = pendingPick; pendingPick = null; if (t) runTap(t); }); // iOS opens the file picker only inside a touch gesture
   cv.addEventListener('contextmenu', e => e.preventDefault());
   cv.addEventListener('pointerup', finish);
   cv.addEventListener('pointercancel', e => { pts.delete(e.pointerId); pinch = null; drag = null; $('safe').hidden = true; });
@@ -1211,7 +1242,10 @@ input[type=range]{width:100%;accent-color:var(--signal)}
   $('resClose').addEventListener('click', () => { $('result').hidden = true; });
   $('toast').addEventListener('click', () => { $('toast').hidden = true; });
   $('saveBtn').addEventListener('click', () => {
-    cv.toBlob(async blob => {
+    cancelAnimationFrame(raf); exporting = true; draw(); exporting = false;
+    const snap = document.createElement('canvas'); snap.width = W; snap.height = H; snap.getContext('2d').drawImage(cv, 0, 0);
+    draw();
+    snap.toBlob(async blob => {
       if (!blob) { toast('Не получилось собрать картинку.'); return; }
       const d = daysLeft();
       const name = `story-${state.fmt}-${d > 0 ? d : 'race'}.jpg`;
