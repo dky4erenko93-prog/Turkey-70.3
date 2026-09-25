@@ -37,34 +37,39 @@ h1{margin:0;font:800 20px/1.1 var(--label);letter-spacing:.02em;text-transform:u
   .stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
 }
 /* phone: the preview stays pinned on top, settings scroll underneath in tabs */
-:root{--side:76px;--ph:min(44svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(30svh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}
-@supports not (height:1svh){:root{--ph:min(44vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9));--ph-typing:min(30vh, calc((100vw - 56px - 2 * var(--side)) * 16 / 9))}}
+:root{--ph:min(56svh, calc((100vw - 32px) * 16 / 9));--ph-typing:min(30svh, calc((100vw - 32px) * 16 / 9))}
+@supports not (height:1svh){:root{--ph:min(56vh, calc((100vw - 32px) * 16 / 9));--ph-typing:min(30vh, calc((100vw - 32px) * 16 / 9))}}
+.mobile-only{display:none}
 @media (max-width:819px){
   body{padding-top:0}
-  header{display:none}
+  header,.side-l,.hint{display:none!important}
+  .mobile-only{display:block}
   .app,.work{gap:0}
+  /* pinned preview on top; one row under it: tabs + save */
   .stage{position:sticky;top:var(--vvtop,0px);z-index:6;margin:0 -16px;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 0;background:var(--ink);border-bottom:1px solid var(--line);
-    grid-template-columns:minmax(var(--side),1fr) auto minmax(var(--side),1fr);grid-template-areas:"l f r" "h h h" "t t t";column-gap:12px;row-gap:8px;justify-items:stretch}
-  .frame{grid-area:f;height:var(--ph);width:calc(var(--ph) * 9 / 16)} /* both sides explicit: Safari does not recompute an aspect-ratio width inside the grid */
+    grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"f f" "t r";column-gap:10px;row-gap:10px;align-items:end;justify-items:stretch}
+  .frame{grid-area:f;justify-self:center;height:var(--ph);width:calc(var(--ph) * 9 / 16)} /* both sides explicit: Safari does not recompute an aspect-ratio width inside the grid */
   .frame canvas{width:100%;height:100%;border-radius:12px}
   .safe{border-radius:12px}
-  .side-l,.side-r{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-width:0;width:auto}
-  .side-l{grid-area:l;align-items:flex-start}
-  .side-r{grid-area:r;align-items:stretch}
-  .mini-title{font:800 11px/1.2 var(--label);letter-spacing:.05em;text-transform:uppercase;color:var(--bone)}
-  .side-l .count{font-size:10px;padding:6px 7px 5px;letter-spacing:.06em}
-  .btn.primary.save{flex-direction:column;gap:6px;padding:14px 6px;font:700 12px/1.1 var(--ui);letter-spacing:0;text-transform:none;border-radius:14px}
+  .side-r{grid-area:r;display:flex;align-items:center;width:auto;padding-bottom:6px}
+  .btn.primary.save{width:auto;flex-direction:row;gap:6px;height:40px;padding:0 14px;font:700 14px/1 var(--ui);letter-spacing:0;text-transform:none;border-radius:12px}
+  .btn.primary.save svg{width:18px;height:18px}
   .save .wide{display:none}
-  .ghost-btn{flex-direction:column;gap:4px;padding:9px 6px;font:600 11px/1.15 var(--ui);text-align:center;border-radius:12px}
-  .hint{grid-area:h;font-size:12px}
-  .tabs{grid-area:t;display:flex;margin:0 -8px}
-  .tabs button{flex:1;appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--ash);font:600 14px/1 var(--ui);padding:10px 4px 12px;cursor:pointer}
+  /* «Текст на место» sits in the empty corner beside the preview */
+  #resetText{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:16px;flex-direction:column;gap:4px;width:74px;padding:9px 6px;font:600 11px/1.15 var(--ui);text-align:center;border-radius:12px}
+  .tabs{grid-area:t;display:flex;margin-left:-8px}
+  .tabs button{flex:1;appearance:none;background:none;border:0;border-bottom:2px solid transparent;color:var(--ash);font:600 14px/1 var(--ui);padding:12px 2px 14px;cursor:pointer;white-space:nowrap}
   .tabs button[aria-selected="true"]{color:var(--bone);border-bottom-color:var(--signal)}
   .tabs button:focus-visible{outline:2px solid var(--signal);outline-offset:-2px}
   .controls{padding-top:18px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 32px)}
   body input[type=text],body textarea,body select{font-size:16px} /* below 16px iOS Safari zooms the page on focus */
   .controls > .sec:not(.on){display:none}
-  body.typing .hint,body.typing .tabs{display:none}
+  body.typing .tabs,body.typing .side-r{display:none}
+  @media (max-width:419px){ /* narrow phones: the tabs need the room, save becomes an icon */
+    .btn.primary.save{width:48px;padding:0;justify-content:center}
+    .save .lbl{display:none}
+  }
+  body.typing .stage{padding-bottom:10px}
   body.typing{--ph:var(--ph-typing)}
   body.typing .controls{padding-bottom:60vh}
 }
@@ -130,7 +135,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
       </div>
       <div class="frame"><canvas id="cv" width="1080" height="1920" aria-label="Превью сторис 1080×1920"></canvas><div class="safe" id="safe" hidden aria-hidden="true"><i class="t">Здесь интерфейс Instagram</i><i class="b">Здесь интерфейс Instagram</i></div></div>
       <div class="side side-r">
-        <button class="btn primary save" id="saveBtn"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5 12 15.5 17 10.5"/><path d="M5 20h14"/></svg><span>Сохранить<span class="wide"> сторис</span></span></button>
+        <button class="btn primary save" id="saveBtn" aria-label="Сохранить сторис"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10.5 12 15.5 17 10.5"/><path d="M5 20h14"/></svg><span class="lbl">Сохранить<span class="wide"> сторис</span></span></button>
         <button class="btn ghost-btn" id="resetText" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg><span>Текст на место</span></button>
       </div>
       <p class="hint">Двигай фото и текст прямо на превью</p>
@@ -158,6 +163,7 @@ input[type=range]{width:100%;accent-color:var(--signal)}
         </div>
           <p class="desc" id="fmtDesc"></p>
         </div>
+        <p class="desc mobile-only">Фото и текст двигаются пальцем прямо на превью.</p>
         <p class="desc">Готовый файл — JPG 1080×1920. На iPhone после сохранения откроется меню «Поделиться», там сразу есть Instagram.</p>
       </section>
 
